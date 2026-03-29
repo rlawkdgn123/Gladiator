@@ -200,15 +200,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.youngwoocho02.unity-cli-connector": {
-      "version": "https://github.com/INT-smashed/unity-cli-expand.git?path=unity-connector",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.unity.nuget.newtonsoft-json": "3.2.1"
-      },
-      "hash": "433e0dff486e0dfc267a997117e1625f7117383c"
-    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
