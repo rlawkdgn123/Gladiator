@@ -8,10 +8,6 @@ using UnityEngine.UI;
 
 public class PlayerGuardIndicator : MonoBehaviour
 {
-    [Header("OtherComponents")]
-    [SerializeField] private Canvas m_Canvas;
-    [SerializeField] private Camera m_Camera;
-
     [Header("IndicatorAnchor")]
     [SerializeField] private Transform m_IndicatorAnchor;
     [Tooltip("방향 표시기 중앙 위치값")]
@@ -27,6 +23,11 @@ public class PlayerGuardIndicator : MonoBehaviour
     [SerializeField] private RectTransform m_LeftTrans;
     [SerializeField] private RectTransform m_RightTrans;
 
+    [Header("OtherComponents")]
+    //[SerializeField] private PlayerController m_Player;
+    [SerializeField] private Canvas m_Canvas;
+    [SerializeField] private Camera m_Camera;
+
     private void Awake()
     {
         if (!m_IndicatorAnchor)
@@ -41,6 +42,9 @@ public class PlayerGuardIndicator : MonoBehaviour
             m_IndicatorAnchor = uiAnchor != null ? uiAnchor : transform.parent;
         }
 
+        //if (!m_Player)
+        //    m_Player = GetComponentInParent<PlayerController>();
+
         if (!m_Camera)
             m_Camera = Camera.main;
 
@@ -52,12 +56,15 @@ public class PlayerGuardIndicator : MonoBehaviour
 
         if (m_Canvas)
             m_Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        // 포지션 갱신
+        m_IndicatorPos = m_IndicatorAnchor.position;
     }
 
     private void Update()
     {
         // 포지션 갱신
-        m_IndicatorPos = m_IndicatorAnchor.position;
+        m_IndicatorAnchor.position = m_IndicatorPos;
 
         // 인디케이터 업데이트
         if (m_TopTrans)
