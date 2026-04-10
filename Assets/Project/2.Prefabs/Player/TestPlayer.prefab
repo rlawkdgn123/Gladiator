@@ -803,6 +803,7 @@ Transform:
   - {fileID: 3863312765870594533}
   - {fileID: 3153570930313697397}
   - {fileID: 2414494485704802917}
+  - {fileID: 3766953443801183127}
   - {fileID: 4779898476060984819}
   - {fileID: 7681505054845250631}
   m_Father: {fileID: 0}
@@ -955,8 +956,9 @@ MonoBehaviour:
     ForwardCheckDistance: 0.05
     GroundCheckDistance: 2
     GroundCheckThreshold: 0.01
-    MaxSlopeAngle: 30
+    MaxSlopeAngle: 45
     RotationSpeed: 20
+    TurningMoveSpeed: 1
     SprintSpeed: 9
     RunningSpeed: 6
     WalkSpeed: 2.5
@@ -966,7 +968,7 @@ MonoBehaviour:
   m_currentState:
     IsFocusing: 0
     isEnemyDetected: 0
-    IsNotMoving: 0
+    IsMoving: 0
     IsSprinting: 0
     IsStrafing: 0
     HasLockedMoveDirection: 0
@@ -988,6 +990,7 @@ MonoBehaviour:
     - {fileID: 0}
     - {fileID: 0}
     - {fileID: 0}
+    FocusTargetDistance: 0
 --- !u!1 &2231005131820902527
 GameObject:
   m_ObjectHideFlags: 0
@@ -1516,6 +1519,37 @@ Transform:
   m_Children:
   - {fileID: 801780556701188940}
   m_Father: {fileID: 3573775282412789787}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4328650869386617476
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3766953443801183127}
+  m_Layer: 6
+  m_Name: CamraAimPosition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3766953443801183127
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4328650869386617476}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.259, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6381601365922109435}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4383018236259854075
 GameObject:

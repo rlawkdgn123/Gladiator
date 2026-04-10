@@ -49,7 +49,10 @@ namespace Player
         public float MaxSlopeAngle = 50f;
 
         [Range(1f, 20f), Tooltip("회전 속도.")]
-        public float RotationSpeed = 20f;
+        public float RotateSpeed = 20f;
+
+        [Range(0f, 30f), Tooltip("주 이동 각도 외 회전 중 이동 속도.")]
+        public float TurningMoveSpeed = 1f;
 
         [Range(1f, 30f), Tooltip("질주 속도.")]
         public float SprintSpeed = 9f;
@@ -121,7 +124,8 @@ namespace Player
         [Header("Detect")]
         public Collider FocusTarget;
         public Collider[] DetectEnemysBuffer = new Collider[Global.MaxPlayersPerTeam];
-
+        [Tooltip("포커싱된 상대방과의 거리.")]
+        public float FocusTargetDistance;
     }
 
     [Serializable]

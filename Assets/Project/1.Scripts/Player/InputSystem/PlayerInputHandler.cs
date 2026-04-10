@@ -18,6 +18,7 @@ namespace InputHandle
         //public bool LeftShift;
     }
 
+    [Serializable]
     public class InputActions
     {
         public InputAction SprintAction;
