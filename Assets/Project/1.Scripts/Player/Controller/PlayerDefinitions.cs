@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Cinemachine;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,10 +14,15 @@ namespace Player
         public CapsuleCollider CapsuleCollider;
         public PlayerInput PlayerInput;
         public PlayerInputHandler InputHandler;
+        public PlayerTargetFinder FocusAim;
+        public PlayerGuardIndicator GuardIndicator;
 
         [Space]
         [Header("PlayerCamera")]
-        public Camera Camera;
+        public Camera MainCamera;
+        public CinemachineFreeLook OrbitCamera;
+        public CinemachineVirtualCamera FocusCamera;
+        public CinemachineInputProvider OrbitInputProvider;
 
         [Space]
         [Header("IndicatorCanvas")]
@@ -28,6 +34,9 @@ namespace Player
     {
         public Vector2 MoveVector;
         public Vector2 LookVector;
+
+        public Vector3 ScreenCenter;
+        public Ray Aim;
     }
 
     [Serializable]
@@ -69,14 +78,36 @@ namespace Player
         [Tooltip("중력.")]
         public float Gravity = -9.81f;
 
-        [Range(1f, 30f), Tooltip("포커스 모드 적 감지 범위.")]
+        [Range(1f, 30f), Tooltip("포커스 모드 전환을 위한 적 감지 범위.")]
         public float DetectRadius = 2.5f;
+
+        //[Range(1f, 30f), Tooltip("포커스 모드 전환을 위한 에임 적 감지 범위.")]
+        //public float AimRadius = 2.5f;
+
+        [Tooltip("카메라/오버랩 프러스텀 최대 감지 범위.")]
+        public float DetectAimDistance = 30f;
+
+        [Tooltip("카메라 1차 감지 범위. 이후 검사된 오브젝트를 카메라와 비교합니다.")]
+        public Vector3 OverlapBoxHalfExtents = new Vector3(3f, 2f, 6f);
+        
+        [Tooltip("카메라 1차 감지 범위 위치 보정치.")]
+        public Vector3 OverlapBoxForwardOffset = new Vector3(0f, 0f, 0f);
+
+        [Tooltip("포커스 진입 시 가드 인디케이터 페이드아웃 시간.")]
+        public float FocusIndicatorFadeOutDuration = 0.2f;
+
+        [Tooltip("포커스 진입 후 타겟이 없을 때 디폴트 모드로 되돌아가기 전 대기 시간.")]
+        public float FocusNoTargetReturnDelay = 0.35f;
+
+        [Tooltip("포커스 진입 실패 시 가드 인디케이터 페이드인 시간.")]
+        public float FocusIndicatorFadeInDuration = 0.2f;
     }
 
     [Serializable]
     public class CurrentState
     {
         public bool IsFocusing;
+        public bool IsEnteringFocus;
         public bool isEnemyDetected;
 
         [Space]
@@ -91,9 +122,7 @@ namespace Player
         [Space]
         public bool IsForwardBlocked;
         public bool IsGrounded;
-        public bool IsOnSteepSlope;
-
-        
+        public bool IsOnSteepSlope; 
     }
 
     [Serializable]
@@ -109,7 +138,7 @@ namespace Player
 
         [Header("Direction")]
         [Tooltip("기본적인 플레이어의 전방.")]
-        public Vector3 ForwardVector; // 기본 플레이어 전방
+        public Vector3 ForwardVector; // 기본 플레이어 전방.
 
        [Space]
         public float GroundDistance;
@@ -126,8 +155,12 @@ namespace Player
         public Collider[] DetectEnemysBuffer = new Collider[Global.MaxPlayersPerTeam];
         [Tooltip("포커싱된 상대방과의 거리.")]
         public float FocusTargetDistance;
+
+        [Tooltip("포커스 진입 시 플레이어가 맞춰볼 목표 회전값.")]
+        public Quaternion FocusEnterTargetRotation;
     }
 
+    // 현재 사용 안함.
     [Serializable]
     public class PlayerFollowCamera
     {

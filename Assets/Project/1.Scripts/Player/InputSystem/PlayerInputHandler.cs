@@ -65,4 +65,10 @@ public class PlayerInputHandler : MonoBehaviour
     {
         Values.LookVector = value.Get<Vector2>();
     }
+
+    private void OnFocus()
+    {
+        // 인풋 액션 밸류 가져다씀
+        // 마우스 휠클릭 / LCtrl
+    }
 }
