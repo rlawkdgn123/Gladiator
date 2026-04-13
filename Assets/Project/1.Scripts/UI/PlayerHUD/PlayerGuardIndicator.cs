@@ -5,6 +5,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class PlayerGuardIndicator : MonoBehaviour
 {
@@ -27,6 +28,9 @@ public class PlayerGuardIndicator : MonoBehaviour
     //[SerializeField] private PlayerController m_Player;
     [SerializeField] private Canvas m_Canvas;
     [SerializeField] private Camera m_Camera;
+    [SerializeField] private CanvasGroup m_CanvasGroup;
+
+    private Coroutine m_FadeCoroutine;
 
     private void Awake()
     {
@@ -56,6 +60,12 @@ public class PlayerGuardIndicator : MonoBehaviour
 
         if (m_Canvas)
             m_Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        if (!m_CanvasGroup)
+            m_CanvasGroup = GetComponent<CanvasGroup>();
+
+        if (!m_CanvasGroup)
+            m_CanvasGroup = gameObject.AddComponent<CanvasGroup>();
 
         // 포지션 갱신
         m_IndicatorPos = m_IndicatorAnchor.position;
