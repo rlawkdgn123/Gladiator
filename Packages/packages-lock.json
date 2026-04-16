@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.community.unity-mcp": {
+      "version": "https://github.com/usmanbutt-dev/unity-mcp.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "19486cf5696bbd87ae315eada2ff989e00a691f4"
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.11",
       "depth": 0,
@@ -199,6 +206,15 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.youngwoocho02.unity-cli-connector": {
+      "version": "https://github.com/youngwoocho02/unity-cli.git?path=unity-connector",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+      },
+      "hash": "5fef10c26bf14433c3c3b498e20d7c018430e799"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
