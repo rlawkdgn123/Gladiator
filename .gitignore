@@ -75,3 +75,16 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 /Gladiator/Library
 /Gladiator/obj
+
+# ── IDE (각자 IDE 설정은 로컬 전용) ──────────────────
+.idea/
+*.DotSettings.user
+.vscode/
+
+# ── 솔루션 파일 (Unity가 각자 자동 생성) ─────────────
+*.slnx
+
+# ── Claude Code 개인 설정 ─────────────────────────────
+# CLAUDE.md는 프로젝트 공용 → 추적
+# .claude/ 폴더는 개인 hook/memory → 무시
+.claude/

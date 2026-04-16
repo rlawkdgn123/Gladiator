@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.community.unity-mcp": "https://github.com/usmanbutt-dev/unity-mcp.git",
+    "com.community.unity-mcp": "file:com.community.unity-mcp",
     "com.unity.ai.navigation": "2.0.11",
     "com.unity.behavior": "1.0.15",
     "com.unity.collab-proxy": "2.11.4",
