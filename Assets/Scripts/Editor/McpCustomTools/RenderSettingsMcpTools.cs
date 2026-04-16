@@ -47,7 +47,7 @@ namespace Community.Unity.MCP
             [McpParam("Effect name: bloom, color_adjustments, vignette, depth_of_field, chromatic_aberration, motion_blur, film_grain, tonemapping, white_balance", Required = true,
                 EnumValues = new[] { "bloom", "color_adjustments", "vignette", "depth_of_field", "chromatic_aberration", "motion_blur", "film_grain", "tonemapping", "white_balance" })]
             public string effect;
-            [McpParam("Property name on the effect (e.g. 'intensity', 'threshold', 'scatter', 'postExposure', 'contrast', 'saturation', 'hueShift', 'tint', 'temperature', 'focusDistance', 'aperture', 'focalLength', 'mode')", Required = true)]
+            [McpParam("Property name on the effect. bloom: intensity/threshold/scatter/clamp | color_adjustments: postExposure/contrast/saturation/hueShift/tint | vignette: intensity/smoothness/rounded/color | depth_of_field: focusDistance/aperture/focalLength/mode | chromatic_aberration: intensity | motion_blur: intensity/clampValue/mode/quality | film_grain: intensity/response | tonemapping: mode | white_balance: temperature/tint", Required = true)]
             public string property;
             [McpParam("String value for the property")]
             public string stringValue;
@@ -396,9 +396,19 @@ namespace Community.Unity.MCP
                     if (!profile.TryGet<MotionBlur>(out var mb)) return new { error = "MotionBlur not found in profile. Add it first." };
                     switch (args.property.ToLower())
                     {
-                        case "intensity":  mb.intensity.overrideState  = setOverride; mb.intensity.value  = args.floatValue; break;
-                        case "clampvalue": mb.clampValue.overrideState = setOverride; mb.clampValue.value = args.floatValue; break;
-                        default: return new { error = $"Unknown MotionBlur property '{args.property}'." };
+                        case "intensity":   mb.intensity.overrideState   = setOverride; mb.intensity.value   = args.floatValue; break;
+                        case "clampvalue":  mb.clampValue.overrideState  = setOverride; mb.clampValue.value  = args.floatValue; break;
+                        case "mode":
+                            if (!Enum.TryParse<MotionBlurMode>(args.stringValue, true, out var mbMode))
+                                return new { error = $"Invalid MotionBlurMode '{args.stringValue}'. Use CameraOnly or CameraAndObjects." };
+                            mb.mode.overrideState = setOverride; mb.mode.value = mbMode;
+                            break;
+                        case "quality":
+                            if (!Enum.TryParse<MotionBlurQuality>(args.stringValue, true, out var mbQuality))
+                                return new { error = $"Invalid MotionBlurQuality '{args.stringValue}'. Use Low, Medium or High." };
+                            mb.quality.overrideState = setOverride; mb.quality.value = mbQuality;
+                            break;
+                        default: return new { error = $"Unknown MotionBlur property '{args.property}'. Use intensity, clampValue, mode or quality." };
                     }
                     break;
                 }
