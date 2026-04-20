@@ -1,0 +1,6 @@
+root = true
+
+[*.{cs,asmdef,json,shader,hlsl,cginc,compute,uxml,uss,md}]
+charset = utf-8-bom
+end_of_line = crlf
+insert_final_newline = true
