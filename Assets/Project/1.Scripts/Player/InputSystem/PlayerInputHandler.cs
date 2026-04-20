@@ -23,6 +23,8 @@ namespace InputHandle
     {
         public InputAction SprintAction;
         public InputAction FocusAction;
+        public InputAction AttackAction;
+        public InputAction ParryAction;
     }
 }
 
@@ -49,26 +51,46 @@ public class PlayerInputHandler : MonoBehaviour
 
         if (m_playerInput != null)
             Actions.FocusAction = m_playerInput.actions["Focus"];
+
+        if (m_playerInput != null)
+            Actions.AttackAction = m_playerInput.actions["Attack"];
+
+        if (m_playerInput != null)
+            Actions.ParryAction = m_playerInput.actions["Parry"];
     }
 
     private void OnMove(InputValue value)
     {
+        //Debug.Log("OnMove");
         Values.MoveVector = value.Get<Vector2>();
-    }
-
-    private void OnSprint(InputValue value)
-    {
-        // 인풋 액션 밸류 가져다씀
     }
 
     private void OnLook(InputValue value)
     {
+        //Debug.Log("OnLook");
         Values.LookVector = value.Get<Vector2>();
     }
 
-    private void OnFocus()
+    private void OnSprint(InputValue value)
     {
+        Debug.Log("OnSprint");
+        // 인풋 액션 밸류 가져다씀
+    }
+
+    private void OnFocus(InputValue value)
+    {
+        Debug.Log("OnFocus");
         // 인풋 액션 밸류 가져다씀
         // 마우스 휠클릭 / LCtrl
+    }
+
+    private void OnAttack(InputValue value)
+    {
+        Debug.Log("OnAttack");
+    }
+
+    private void OnParry(InputValue value)
+    {
+        Debug.Log("OnParry");
     }
 }

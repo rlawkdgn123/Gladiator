@@ -1,5 +1,4 @@
-﻿using Cinemachine;
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -20,13 +19,10 @@ namespace Player
         [Space]
         [Header("PlayerCamera")]
         public Camera MainCamera;
-        public CinemachineFreeLook OrbitCamera;
-        public CinemachineVirtualCamera FocusCamera;
-        public CinemachineInputProvider OrbitInputProvider;
 
         [Space]
         [Header("IndicatorCanvas")]
-        public GameObject IndicatorCanvas;
+        public Canvas IndicatorCanvas;
     }
 
     [Serializable]
@@ -57,10 +53,16 @@ namespace Player
         [Range(1f, 70f), Tooltip("이동 가능한 최대 경사 각도.")]
         public float MaxSlopeAngle = 50f;
 
-        [Range(1f, 20f), Tooltip("회전 속도.")]
+        [Range(1f, 70f), Tooltip("회전 중 이동속도가 정상 속도로 회복되는 각도.")]
+        public float MoveSpeedRecoverAngle = 50f;
+
+        [Range(1f, 10f), Tooltip("회전 중 이동속도가 정상 속도로 회복되는 지수.")]
+        public float MoveSpeedRecoverPower = 1f;
+
+        [Range(1f, 360f), Tooltip("회전 속도.")]
         public float RotateSpeed = 20f;
 
-        [Range(0f, 30f), Tooltip("주 이동 각도 외 회전 중 이동 속도.")]
+        [Range(0f, 30f), Tooltip("주 이동 각도 외 회전 중 시작 이동 속도.")]
         public float TurningMoveSpeed = 1f;
 
         [Range(1f, 30f), Tooltip("질주 속도.")]
@@ -106,6 +108,8 @@ namespace Player
     [Serializable]
     public class CurrentState
     {
+
+        [Header("States")]
         public bool IsFocusing;
         public bool IsEnteringFocus;
         public bool isEnemyDetected;
@@ -139,8 +143,9 @@ namespace Player
         [Header("Direction")]
         [Tooltip("기본적인 플레이어의 전방.")]
         public Vector3 ForwardVector; // 기본 플레이어 전방.
+        public CursorManager.GuardZone GuardZone; // 마우스 방향
 
-       [Space]
+        [Space]
         public float GroundDistance;
         //public float GroundSlopeAngle;
         //public float ForwardSlopeAngle;
@@ -158,27 +163,5 @@ namespace Player
 
         [Tooltip("포커스 진입 시 플레이어가 맞춰볼 목표 회전값.")]
         public Quaternion FocusEnterTargetRotation;
-    }
-
-    // 현재 사용 안함.
-    [Serializable]
-    public class PlayerFollowCamera
-    {
-        [Header("Object")]
-        public GameObject Player;
-        public GameObject PlayerCamera;
-        public GameObject PlayerCameraPivot;
-
-        [Header("Value")]
-        public Vector3 CameraRotation;
-        public float LeftRightLookSpeed = 500f;
-        public float UpDownLookSpeed = 500f;
-        public float MinDistance = -35f;
-        public float MaxDistance = 35f;
-
-        [Header("Camera Debug")]
-        public Vector3 CameraFollowVelocity = Vector3.zero;
-        public float LeftRightLookAngle;
-        public float UpDownLookAngle;
     }
 }

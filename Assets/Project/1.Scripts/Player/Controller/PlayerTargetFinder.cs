@@ -12,12 +12,15 @@ public class PlayerTargetFinder : MonoBehaviour
 {
     [SerializeField] private List<Collider> m_enemyColliders = new List<Collider>();
 
+    private Transform m_followTarget;
     private CapsuleCollider m_capsuleCollider;
 
 
     private void Awake()
     {
         m_capsuleCollider = GetComponent<CapsuleCollider>();
+        if(!m_followTarget)
+            m_followTarget = Camera.main.transform;
     }
 
     private void Update()
@@ -25,15 +28,15 @@ public class PlayerTargetFinder : MonoBehaviour
         transform.rotation = 
             Quaternion.Euler(
             transform.eulerAngles.x,
-            Camera.main.transform.eulerAngles.y,
+            m_followTarget.eulerAngles.y,
             transform.eulerAngles.z
         );
 
         transform.position =
             new Vector3(
-            Camera.main.transform.position.x,
+            m_followTarget.position.x,
             transform.position.y,
-            Camera.main.transform.position.z
+            m_followTarget.position.z
          );
     }
 

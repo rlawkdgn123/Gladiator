@@ -1,4 +1,4 @@
-﻿using Cinemachine;
+﻿using Player;
 using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(Rigidbody))]
@@ -23,9 +24,16 @@ public class PlayerController : MonoBehaviour
     private Player.Components Components => m_playerComponents;
     private Player.Inputs Inputs => m_playerInputs;
     private Player.CheckOption CheckOptions => m_checkOption;
-    private Player.CurrentState States => m_currentState;
-    private Player.CurrentValue Values => m_currentValue;
+    public Player.CurrentState States => m_currentState;
+    public Player.CurrentValue Values => m_currentValue;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 초기화
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 플레이어 초기화 구간입니다.
+    /// </summary>
     private void Awake()
     {
         //////////////////////////////////////////////////////////////////////
@@ -49,56 +57,36 @@ public class PlayerController : MonoBehaviour
             Components.InputHandler = GetComponent<PlayerInputHandler>();
 
         // 가드 인디케이터
+        if (!Components.GuardIndicator)
+            Components.GuardIndicator = GetComponentInChildren<PlayerGuardIndicator>();
+
         if (!Components.IndicatorCanvas)
-        {
-            PlayerGuardIndicator indicator = GetComponentInChildren<PlayerGuardIndicator>();
-            if (indicator != null)
-                Components.IndicatorCanvas = indicator.gameObject;
-        }
+            Components.IndicatorCanvas = GetComponentInChildren<Canvas>();
 
         // 포커스 모드 에임
         if (!Components.FocusAim)
-        {
-            PlayerTargetFinder focusAim = Components.FocusAim = GameObject.Find("PlayerTargetManager").GetComponent<PlayerTargetFinder>();
-            if (focusAim != null)
-                Components.FocusAim = focusAim;
-        }
-        if (!Components.FocusAim) Debug.LogError("[PlayerController] PlayerFocusAim 할당이 되지 않았습니다.");
+            Components.FocusAim = Components.FocusAim = GameObject.Find("PlayerTargetManager").GetComponent<PlayerTargetFinder>();
 
+        if (!Components.FocusAim) Debug.LogError("[PlayerController] PlayerFocusAim 할당이 되지 않았습니다.");
 
         // 카메라 할당.
         if (!Components.MainCamera)
             Components.MainCamera = Camera.main;
-
-        if (!Components.OrbitCamera)
-        {
-            GameObject orbitCameraObject = GameObject.Find("PlayerCamera (Orbit FreeLook)");
-            if (orbitCameraObject != null)
-                Components.OrbitCamera = orbitCameraObject.GetComponent<CinemachineFreeLook>();
-        }
-        //Components.OrbitCamera = FindFirstObjectByType<CinemachineFreeLook>().GetComponent<Camera>();
-        if (!Components.OrbitCamera) Debug.LogError("[PlayerController] PlayerCamera (Orbit FreeLook) 할당이 되지 않았습니다.");
-
-        if (!Components.OrbitInputProvider && Components.OrbitCamera)
-            Components.OrbitInputProvider = Components.OrbitCamera.GetComponent<CinemachineInputProvider>();
-
-        if (!Components.OrbitInputProvider)
-            Debug.LogError("[PlayerController] OrbitCamera의 CinemachineInputProvider 할당이 되지 않았습니다.");
-
-        if (!Components.FocusCamera)
-        {
-            GameObject focusCameraObject = GameObject.Find("PlayerCamera (Focus LockOn)");
-            if (focusCameraObject != null)
-                Components.FocusCamera = focusCameraObject.GetComponent<CinemachineVirtualCamera>();
-        }
-        //Components.FocusCamera = FindFirstObjectByType<CinemachineVirtualCamera>().GetComponent<Camera>();
-        if (!Components.FocusCamera) Debug.LogError("[PlayerController] PlayerCamera (Focus LockOn) 할당이 되지 않았습니다.");
 
         // 리지드바디 필수요소 조정.
         if (!Components.Rigidbody.isKinematic)
             Components.Rigidbody.isKinematic = true;
 
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 업데이트
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 플레이어 업데이트 구간입니다.
+    /// </summary>
     private void FixedUpdate()
     {
         FixedStateUpdate();     // 플레이어 상태 업데이트. [Fixed]
@@ -110,33 +98,59 @@ public class PlayerController : MonoBehaviour
         StateUpdate();          // 플레이어 상태 업데이트. [Frame]
         UpdateCursorState();    // 디폴트 모드 커서 상태 처리.
         GuardIndicatorUpdate(); // 가드 인디케이터 상태 처리.
+        DrawFocusDebug();       // 포커스 디버그 표시.
+    }
+
+    private void LateUpdate()
+    {
+        
     }
 
     private void FixedStateUpdate() // FixedUpdate가 순서상 우선 // 물리 로직 관련.
     {
 
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 상태 갱신
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 플레이어 상태 갱신 구간입니다.
+    /// </summary>
     private void StateUpdate()
     {
+        Camera mainCam = Components.MainCamera;
+
         // 인풋 상태 처리.
         if (Components.InputHandler)
         {
-            Vector2 moveInput = Inputs.MoveVector = Components.InputHandler.Values.MoveVector; // 이동 벡터
+           Vector2 moveInput = Inputs.MoveVector = Components.InputHandler.Values.MoveVector; // 이동 벡터
             Vector2 lookInput = Inputs.LookVector = Components.InputHandler.Values.LookVector; // 화면 벡터
 
-            Inputs.ScreenCenter = new Vector3(Camera.main.pixelWidth / 2, Camera.main.pixelHeight / 2);
-            Inputs.Aim = Camera.main.ScreenPointToRay(Inputs.ScreenCenter); Debug.DrawRay(transform.position, transform.forward * 10f, Color.red);
+            Inputs.ScreenCenter = new Vector3(mainCam.pixelWidth / 2, mainCam.pixelHeight / 2);
+            Inputs.Aim = mainCam.ScreenPointToRay(Inputs.ScreenCenter); Debug.DrawRay(transform.position, transform.forward * 10f, Color.red);
             
             // 움직이기. (Default : Run / Focus : Walk)
             {
                 States.IsMoving = moveInput.sqrMagnitude >= 0.0001f;
                 Components.Animator.SetBool("IsMoving", States.IsMoving);
 
-                // 애니메이션 설정.
-                Components.Animator.SetFloat("MoveInputX", moveInput.x);
-                Components.Animator.SetFloat("MoveInputZ", moveInput.y);
+                if (States.IsFocusing)
+                {
+                    // 포커스 모드
+                    Components.Animator.SetFloat("MoveInputX", moveInput.x);
+                    Components.Animator.SetFloat("MoveInputZ", moveInput.y);
+                }
+                else
+                {
+                    // 디폴트 모드
+                    float inputMag = moveInput.magnitude;
+                    Components.Animator.SetFloat("MoveInputX", 0f);
+                    Components.Animator.SetFloat("MoveInputZ", inputMag);
+                }
             }
 
             // 화면 전환.
@@ -163,11 +177,6 @@ public class PlayerController : MonoBehaviour
 
                 if (States.IsFocusing && !Values.FocusTarget)
                     DetectEnemy(); // 포커스 카메라 전환 전에 실행.
-
-                if (Components.OrbitInputProvider)
-                    Components.OrbitInputProvider.enabled = !States.IsFocusing;
-                else
-                    Debug.LogWarning("[PlayerController] OrbitInputProvider가 감지되지 않았습니다. 유의하세요.");
 
                 Components.Animator.SetBool("IsFocusing", States.IsFocusing);
             }
@@ -196,11 +205,11 @@ public class PlayerController : MonoBehaviour
 
     private void GuardIndicatorUpdate()
     {
-        if (Components.IndicatorCanvas)
+        if (Components.IndicatorCanvas && Components.GuardIndicator)
         {
             bool showIndicator = States.IsFocusing;
-            if (Components.IndicatorCanvas.activeSelf != showIndicator)
-                Components.IndicatorCanvas.SetActive(showIndicator);
+            if (Components.IndicatorCanvas.enabled != showIndicator)
+                Components.IndicatorCanvas.enabled = showIndicator;
         }
         else Debug.LogError("[PlayerController] IndicatorCanvas 필요.");
     }
@@ -219,9 +228,23 @@ public class PlayerController : MonoBehaviour
         bool shouldShowCursor = !shouldLockCursor;
         if (Cursor.visible != shouldShowCursor)
             Cursor.visible = shouldShowCursor;
+
+        if (CursorManager.Instance)
+        {
+           Values.GuardZone = CursorManager.Instance.GetGuardZone();
+            // 애니메이터 할당
+            Components.Animator.SetInteger("CursorZone", (int)Values.GuardZone);
+        }
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 적 탐지
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// <summary>
+    /// 적 탐지 로직 구간입니다.
+    /// </summary>
     //////////////////////////////////////////////////////////////////////
     /// DetectEnemy()
     //////////////////////////////////////////////////////////////////////
@@ -279,6 +302,8 @@ public class PlayerController : MonoBehaviour
         // 스냅샷은 오버랩 -> 한 번만 하기 때문에 채택
         // 중앙 실린더는 콜라이더 -> 적 감지를 못하면 계속 감지해야 해서
         // 1번의 경우, 제외하면 모든 오브젝트를 검사해야하므로, 너무 비싸서 했음.
+        // 혹시 모를 장애물 뒤 적도 필터링하여 제외하려고 
+        // 레이캐스트 테스트도 넣을 예정이었으나 추후에 할 예정.
         */
 
         {
@@ -353,43 +378,65 @@ public class PlayerController : MonoBehaviour
                     outsideAimEnemies.Add(enemy);
             }
 
-            //Collider bestTarget = FindAimClosetTarget(insideAimEnemies);
+            // 마지막으로 화면 중앙과 거리 비교로 필터링 마침
+            Collider finalTarget = FindAimClosetTarget(insideAimEnemies);
 
-            //if (bestTarget == null)
-                //bestTarget = FindAimClosetTarget(outsideAimEnemies);
+            if (finalTarget == null)
+                finalTarget = FindAimClosetTarget(outsideAimEnemies);
+
+            Values.FocusTarget = finalTarget;
+            States.isEnemyDetected = finalTarget != null;
         }
 
     }
 
+
     Collider FindAimClosetTarget(List<Collider> targetColliders)
     {
-        if(targetColliders.Count == 0) return null;
+        if (targetColliders == null || targetColliders.Count == 0)
+            return null;
 
-        // 가장 가까운 거리의 콜라이더 선택.
-        float closestDistanceSqr = float.MaxValue;
+
+        // 화면 중앙과 가장 가까운 적 선택.
+        float closestViewportDistanceSqr = float.MaxValue;
         Collider closestEnemy = null;
+        Vector2 viewportCenter = Pivot.Center;
 
-        // 거리 최소값 콜라이더 구하기
-        for (int i = 0; i < targetColliders.Count; ++i)
+        // 화면 중앙 기준 최소 거리 콜라이더 구하기
+        foreach (Collider detectedEnemy in targetColliders)
         {
-            Collider detectedEnemy = targetColliders[i];
-            if (!detectedEnemy) continue;
+            if (!detectedEnemy)
+                continue;
 
-            float enemyDistanceSqr = // 거리 계산
-                (detectedEnemy.transform.position - Inputs.Aim.origin).sqrMagnitude;
+            Vector3 viewPos = Components.MainCamera.WorldToViewportPoint(detectedEnemy.bounds.center);
 
-            if (enemyDistanceSqr >= closestDistanceSqr) continue;
+            if (viewPos.z <= 0f)
+                continue;
 
-            closestDistanceSqr = enemyDistanceSqr;
+            if (viewPos.x < 0f || viewPos.x > 1f || viewPos.y < 0f || viewPos.y > 1f)
+                continue;
+
+            Vector2 enemyViewportPos = new Vector2(viewPos.x, viewPos.y);
+            float distanceToCenter = Vector2.SqrMagnitude(enemyViewportPos - viewportCenter);// 길이 비교용벡터
+
+            if (distanceToCenter >= closestViewportDistanceSqr)
+                continue;
+
+            closestViewportDistanceSqr = distanceToCenter;
             closestEnemy = detectedEnemy;
         }
-
-        Values.FocusTarget = closestEnemy;
-        States.isEnemyDetected = closestEnemy != null;
 
         return closestEnemy;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 이동
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 플레이어 이동 로직 구간입니다.
+    /// 모든 게임오브젝트의 이동 및 회전, 물리 연산은 FixedUpdate()에서 이뤄집니다.
+    /// </summary>
     private void Moving()
     {
         Vector2 moveInput = Inputs.MoveVector;
@@ -397,6 +444,8 @@ public class PlayerController : MonoBehaviour
         Values.MoveAmount = Mathf.Clamp01(Mathf.Abs(moveInput.x) + Mathf.Abs(moveInput.y));
         Values.ForwardVector = Components.Rigidbody.rotation * Vector3.forward; // 플레이어 현재 바라보는 방향
         // Values.ForwardVector = transform.forward; // 플레이어 현재 바라보는 방향
+
+        if (!States.IsMoving) return;
 
         if (States.IsFocusing)
             MovingFocus();
@@ -406,108 +455,111 @@ public class PlayerController : MonoBehaviour
 
     private void MovingDefault()
     {
-        if (!States.IsMoving)
-        {
-            States.HasLockedMoveDirection = false;
-            Values.PlayerVelocity = Vector3.zero;
-            return;
-        }
-
         if (Components.MainCamera == null)
             return;
-
 
         // 이동속도.
         float moveSpeed = States.IsSprinting
             ? CheckOptions.SprintSpeed
             : CheckOptions.RunningSpeed;
 
-        // 방향 벡터.
-        Vector3 camForward = Components.MainCamera.transform.forward.normalized; // 카메라 전방 벡터.
-        Vector3 camRight = Components.MainCamera.transform.right.normalized;     // 카메라 우측 벡터.
+        Vector3 camForward = Components.MainCamera.transform.forward.normalized;
+        Vector3 camRight = Components.MainCamera.transform.right.normalized;
+        //Vector3 camForward = m_cachedCamForward;
+        //Vector3 camRight = m_cachedCamRight;
         camForward.y = 0f;
         camRight.y = 0f;
+        camForward.Normalize();
+        camRight.Normalize();
 
-        //정지 상태라면.
         if (camForward.sqrMagnitude < 0.0001f || camRight.sqrMagnitude < 0.0001f)
-        {
-            Values.PlayerVelocity = Vector3.zero; return;
-        }
-
-        // 현재 사용될 값.
-        Vector3 curForward = Values.ForwardVector.normalized; // 단순 플레이어 기준 정방향.
-        Vector3 curMoveDir =                                  // 로컬 입력 회전값 (카메라 기준 영향 O).
-            (camRight * Values.MoveDirection.x +              // 카메라 좌우.
-            camForward * Values.MoveDirection.z)              // 카메라 앞뒤.
-            .normalized;
-
-        if (curMoveDir.sqrMagnitude < 0.0001f)
         {
             Values.PlayerVelocity = Vector3.zero;
             return;
         }
 
-        // 바라보는 방향 -> 이동 벡터를 통해 차이나는 각을 획득.
-        float angle = Vector3.Angle(curForward, curMoveDir);
+        Vector3 playerForward = Values.ForwardVector.normalized;
+        playerForward.y = 0f;
+        playerForward.Normalize();
 
-        Quaternion targetRotation = Quaternion.LookRotation(curMoveDir); // 가고자 하는 회전 방향 구하기.
+        // 현재 사용될 값 (카메라 기준 XZ 방향 적용)
+        Vector3 curMoveDir = 
+            (camRight * Values.MoveDirection.x + 
+            camForward * Values.MoveDirection.z)
+            .normalized;
 
-        // 현재 회전에서 목표 회전까지,
-        // 이번 프레임에 허용된 최대 각도만큼만 회전한 새 Quaternion을 반환.
-        Quaternion nextRotation = 
+        // 회전 단계
+        Quaternion targetRotation = Quaternion.LookRotation(curMoveDir);
+        Quaternion nextRotation =
             Quaternion.RotateTowards(
             Components.Rigidbody.rotation,
             targetRotation,
-            CheckOptions.RotateSpeed * CheckOptions.RotateSpeed * Time.deltaTime); // 최대 회전각.
+            CheckOptions.RotateSpeed * Time.fixedDeltaTime);
 
-        // 회전
         Components.Rigidbody.MoveRotation(nextRotation);
+        // 이동 단계
 
-        if (angle > CheckOptions.MaxSlopeAngle)
+        // 플레이어 벡터와 카메라 벡터의 차이 각도 구하기
+        float angle = playerForward.sqrMagnitude < 0.0001f
+            ? 0f
+            : Vector3.Angle(playerForward, curMoveDir);
+
+
+        // 현재 이동속도 회전에 따라 구분하기
+        // 차이 각도가 리커버앵글보다 작으면 가속 (리커버앵글 도달 시 원래 이속)
+        float currentSpeed = moveSpeed;
+        if (angle > CheckOptions.MoveSpeedRecoverAngle )
         {
-            if(CheckOptions.TurningMoveSpeed == 0)
-            {
-                // 제자리 회전만 하기.
-                Values.PlayerVelocity = Vector3.zero;
-            }
-            else
-            {
-                // 느리게 움직이며 회전하기.
-                Vector3 nextPosition = Components.Rigidbody.position + curMoveDir * (CheckOptions.TurningMoveSpeed * Time.deltaTime);
-                    Components.Rigidbody.MovePosition(nextPosition);
-            }
-            return;
+            // 현재 이동속도까지 보간
+
+            // 선형 보간
+            //float t = 1f - Mathf.Clamp01(angle / CheckOptions.MoveSpeedRecoverAngle);
+            //currentSpeed = Mathf.Lerp(CheckOptions.TurningMoveSpeed, moveSpeed, t);
+
+            // 비선형 보간 : MoveSpeedRecoverPower로 보간값 조절
+            // MoveSpeedRecoverPower를 1로 하면 선형 보간
+            float t = 1f - Mathf.Clamp01(angle / CheckOptions.MoveSpeedRecoverAngle);
+            float curvedT = 1f - Mathf.Pow(1f - t, CheckOptions.MoveSpeedRecoverPower);
+
+            currentSpeed = Mathf.Lerp(
+                CheckOptions.TurningMoveSpeed,
+                moveSpeed,
+                curvedT);
         }
-        else // 플레이어가 바라보는 각도가 일정 정도까지 다다르면 이동 시작.
-        {
-            Vector3 nextPosition = Components.Rigidbody.position + curMoveDir * (moveSpeed * Time.deltaTime);
-                Components.Rigidbody.MovePosition(nextPosition);
-        }
+
+            Vector3 nextPosition =
+                Components.Rigidbody.position + curMoveDir * (currentSpeed * Time.fixedDeltaTime);
+        Components.Rigidbody.MovePosition(nextPosition);
+        Values.PlayerVelocity = curMoveDir * currentSpeed;
     }
 
+    /// <summary>
+    /// 집중 상태
+    /// </summary>
     private void MovingFocus()
     {
         if (Components.MainCamera == null)
             return;
 
+        Vector2 moveInput = Inputs.MoveVector;
+        Vector3 playerPos = Components.Rigidbody.position;
+        float dt = Time.fixedDeltaTime;
+
         if (!Values.FocusTarget)
         {
+            Vector3 camForward = Vector3.ProjectOnPlane(Components.MainCamera.transform.forward, Vector3.up).normalized;
+            Vector3 camRight = Vector3.ProjectOnPlane(Components.MainCamera.transform.right, Vector3.up).normalized;
+
+            if (camForward.sqrMagnitude > 0.0001f)
+                Components.Rigidbody.MoveRotation(Quaternion.LookRotation(camForward));
+
             if (!States.IsMoving)
             {
                 Values.PlayerVelocity = Vector3.zero;
                 return;
             }
 
-            // 카메라 벡터
-            Vector3 camForward = Components.MainCamera.transform.forward.normalized; // 카메라 전방 벡터.
-            Vector3 camRight = Components.MainCamera.transform.right.normalized;     // 카메라 우측 벡터.
-            camForward.y = 0f;
-            camRight.y = 0f;
-
-            Vector3 curMoveDir =                                  // 로컬 입력 회전값 (카메라 기준 영향 O).
-            (camRight * Values.MoveDirection.x +                  // 카메라 좌우.
-            camForward * Values.MoveDirection.z)                  // 카메라 앞뒤.
-            .normalized;
+            Vector3 curMoveDir = camRight * moveInput.x + camForward * moveInput.y;
 
             if (curMoveDir.sqrMagnitude < 0.0001f)
             {
@@ -515,47 +567,72 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
-            Values.PlayerVelocity = curMoveDir * CheckOptions.WalkSpeed;
+            curMoveDir.Normalize();
 
-            Vector3 nextPosition = Components.Rigidbody.position + Values.PlayerVelocity * Time.deltaTime;
-            Components.Rigidbody.MovePosition(nextPosition);
-            return;
+            Values.PlayerVelocity = curMoveDir * CheckOptions.WalkSpeed;
+            Components.Rigidbody.MovePosition(playerPos + Values.PlayerVelocity * dt);
         }
         else
         {
             Transform focusTarget = Values.FocusTarget.transform;
+            Vector3 targetPos = focusTarget.position;
 
-            // 타겟 기준 현재 위치 오프셋.
-            Vector3 offset = Components.Rigidbody.position - focusTarget.position;
-            offset.y = 0f;
+            Vector3 toPlayer = Vector3.ProjectOnPlane(playerPos - targetPos, Vector3.up);
+            float currentRadius = toPlayer.magnitude;
 
-            if (offset.sqrMagnitude < 0.0001f)
+            if (currentRadius < 0.01f)
                 return;
 
-            // 좌우 입력으로 타겟 주위를 원형 회전.
-            offset = Quaternion.AngleAxis(-Inputs.MoveVector.x * CheckOptions.RotateSpeed * Time.deltaTime, Vector3.up) * offset;
+            Vector3 radialDir = toPlayer / currentRadius;
 
-            // 앞뒤 입력으로 반지름 증감.
-            float radius = offset.magnitude;
-            radius -= Inputs.MoveVector.y * CheckOptions.WalkSpeed * Time.deltaTime;
+            // +가 왼쪽
+            //Vector3 tangentDir = Vector3.Cross(Vector3.up, radialDir).normalized;
+            // 좌우 반전 (기본값)
+            Vector3 tangentDir = Vector3.Cross(radialDir, Vector3.up).normalized;
 
-            offset = offset.normalized * radius;
-            Vector3 nextPosition = focusTarget.position + offset;
-            Vector3 lookDir = focusTarget.position - nextPosition;
-            lookDir.y = 0f;
+            Vector3 moveDir = tangentDir * moveInput.x - radialDir * moveInput.y;
 
-            if (lookDir.sqrMagnitude < 0.0001f)
+            if (moveDir.sqrMagnitude < 0.0001f)
+            {
+                Values.PlayerVelocity = Vector3.zero;
+
+                Vector3 lookDir = Vector3.ProjectOnPlane(targetPos - playerPos, Vector3.up);
+                if (lookDir.sqrMagnitude > 0.0001f)
+                {
+                    Components.Rigidbody.MoveRotation(Quaternion.LookRotation(lookDir));
+                }
+
+                return;
+            }
+
+            moveDir.Normalize();
+            Values.PlayerVelocity = moveDir * CheckOptions.WalkSpeed;
+
+            Vector3 nextPosition = playerPos + Values.PlayerVelocity * dt;
+            Vector3 lookDirection = Vector3.ProjectOnPlane(targetPos - nextPosition, Vector3.up);
+
+            if (lookDirection.sqrMagnitude < 0.0001f)
                 return;
 
-            Quaternion targetRotation = Quaternion.LookRotation(lookDir);
-
-            Values.FocusTargetDistance = radius;
+            Values.FocusTargetDistance = Vector3.Distance(
+                Vector3.ProjectOnPlane(nextPosition, Vector3.up),
+                Vector3.ProjectOnPlane(targetPos, Vector3.up)
+            );
 
             Components.Rigidbody.MovePosition(nextPosition);
-            Components.Rigidbody.MoveRotation(targetRotation);
+            Components.Rigidbody.MoveRotation(Quaternion.LookRotation(lookDirection));
         }
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 디버그
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 디버그 구간입니다.
+    /// </summary>
     private void OnDrawGizmos()
     {
         if (States.IsFocusing && Components.MainCamera != null)
@@ -590,5 +667,30 @@ public class PlayerController : MonoBehaviour
 
 
         }
+    }
+
+    private void DrawFocusDebug()
+    {
+        if (!States.IsFocusing || Components.MainCamera == null)
+            return;
+
+        Debug.DrawRay(
+            Inputs.Aim.origin,
+            Inputs.Aim.direction * CheckOptions.DetectAimDistance,
+            Color.cyan);
+
+        if (Values.FocusTarget == null)
+            return;
+
+        Vector3 enemyPoint = Values.FocusTarget.bounds.center;
+        float projectedDistance =
+            Vector3.Dot(enemyPoint - Inputs.Aim.origin, Inputs.Aim.direction);
+
+        projectedDistance = Mathf.Clamp(projectedDistance, 0f, CheckOptions.DetectAimDistance);
+
+        Vector3 closestPointOnAimRay =
+            Inputs.Aim.origin + Inputs.Aim.direction * projectedDistance;
+
+        Debug.DrawLine(closestPointOnAimRay, enemyPoint, Color.yellow);
     }
 }
