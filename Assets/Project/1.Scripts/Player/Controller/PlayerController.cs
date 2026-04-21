@@ -129,6 +129,7 @@ public class PlayerController : MonoBehaviour
         {
            Vector2 moveInput = Inputs.MoveVector = Components.InputHandler.Values.MoveVector; // 이동 벡터
             Vector2 lookInput = Inputs.LookVector = Components.InputHandler.Values.LookVector; // 화면 벡터
+            float scrollInput = Inputs.ScrollY = Components.InputHandler.Values.ScrollY; // 화면 벡터
 
             Inputs.ScreenCenter = new Vector3(mainCam.pixelWidth / 2, mainCam.pixelHeight / 2);
             Inputs.Aim = mainCam.ScreenPointToRay(Inputs.ScreenCenter); Debug.DrawRay(transform.position, transform.forward * 10f, Color.red);

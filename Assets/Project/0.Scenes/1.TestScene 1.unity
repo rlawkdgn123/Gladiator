@@ -2153,6 +2153,10 @@ PrefabInstance:
       value: Parry
       objectReference: {fileID: 0}
     - target: {fileID: 171170765291258589, guid: 472451f73c8f53f4ebf7931032ff288c, type: 3}
+      propertyPath: m_inputActions.WhillAction.m_Name
+      value: Whill
+      objectReference: {fileID: 0}
+    - target: {fileID: 171170765291258589, guid: 472451f73c8f53f4ebf7931032ff288c, type: 3}
       propertyPath: m_inputActions.AttackAction.m_Name
       value: Attack
       objectReference: {fileID: 0}

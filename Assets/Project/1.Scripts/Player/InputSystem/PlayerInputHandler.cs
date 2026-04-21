@@ -10,6 +10,7 @@ namespace InputHandle
     {
         public Vector2 MoveVector;
         public Vector2 LookVector;
+        public float ScrollY;
     }
 
     // 미사용
@@ -25,6 +26,7 @@ namespace InputHandle
         public InputAction FocusAction;
         public InputAction AttackAction;
         public InputAction ParryAction;
+        public InputAction WhillAction;
     }
 }
 
@@ -57,6 +59,9 @@ public class PlayerInputHandler : MonoBehaviour
 
         if (m_playerInput != null)
             Actions.ParryAction = m_playerInput.actions["Parry"];
+
+        if (m_playerInput != null)
+            Actions.ParryAction = m_playerInput.actions["ChangeTarget"];
     }
 
     private void OnMove(InputValue value)
@@ -92,5 +97,12 @@ public class PlayerInputHandler : MonoBehaviour
     private void OnParry(InputValue value)
     {
         Debug.Log("OnParry");
+    }
+
+    private void OnChangeTarget(InputValue value)
+    {
+        Values.ScrollY = value.Get<float>();
+        Debug.Log("OnChangeTarget");
+        Debug.Log(Values.ScrollY);
     }
 }

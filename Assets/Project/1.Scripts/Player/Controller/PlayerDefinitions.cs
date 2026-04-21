@@ -30,6 +30,7 @@ namespace Player
     {
         public Vector2 MoveVector;
         public Vector2 LookVector;
+        public float ScrollY;
 
         public Vector3 ScreenCenter;
         public Ray Aim;
