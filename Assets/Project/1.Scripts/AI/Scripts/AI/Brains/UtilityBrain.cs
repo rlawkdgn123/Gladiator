@@ -77,6 +77,10 @@ namespace Game.AI.Brains
 
         float ScoreHeavyAttack(AttackDirection direction, float enemyGuardHealth, in CombatObservation observation)
         {
+            // 공격 사거리 밖이면 공격 불가 (DistanceBucket 0 = 사거리 이내, 1 = 사거리 밖)
+            if (observation.DistanceBucket != 0)
+                return -10f;
+
             // 기본 점수
             float score = 1.0f;
 

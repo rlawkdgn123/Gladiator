@@ -27,10 +27,24 @@ namespace Game.Combat.Execution
         [Header("Movement")]
         [SerializeField] Transform playerTransform;
         [SerializeField] float attackRange = 2.0f;
-        [SerializeField] float moveSpeed = 3.0f;
+        [SerializeField] float moveSpeed = 1.5f;
 
         [Header("References")]
         [SerializeField] EnemyAnimatorBridge animatorBridge;
+
+        [Header("Detection & Engagement")]
+        [SerializeField] float detectionRange = 30f;  // 인지 범위: 이 안에 들어오면 Walk로 접근
+        [SerializeField] float combatRange    = 5f;   // 전투 전환 범위: 이 안에 들어오면 Guard + AI 판단 시작
+
+        // 거리 → 이동 가중치 커브 제어 (값이 낮을수록 가까울 때 이동 선호가 급격히 낮아짐)
+        [SerializeField] [Range(0.1f, 1f)] float moveCurvePow = 0.35f;
+
+        // ── Unaware  : playerTransform 없거나 detectionRange 밖
+        // ── Approaching : detectionRange 이내, combatRange 밖 → Walk 접근 (판단 없음)
+        // ── InCombat    : combatRange 이내 → Guard + AI 판단
+        enum EngagementPhase { Unaware, Approaching, InCombat }
+        EngagementPhase _engPhase    = EngagementPhase.Unaware;
+        bool            _wantsToMove = false;   // 결정 틱마다 갱신, 프레임마다 유지
 
         IAIBrain currentBrain;
         Rigidbody rb;
@@ -39,12 +53,41 @@ namespace Game.Combat.Execution
         public CombatState State => combatState;
         public AIParryLearner ParryLearner => parryLearner;
 
+        // ── AI vs AI 바인딩 ───────────────────────────────
+        /// <summary>상대방 AI를 연결한다. AIBattleManager가 Start()에서 호출.</summary>
+        public void BindOpponent(EnemyCombatController opponent)
+        {
+            playerTransform    = opponent.transform;
+            combatState.player = opponent.State.enemy;   // 참조 공유 → 데미지 실시간 반영
+
+            // 바인딩 직후 즉시 상대 방향으로 회전
+            FaceTowardPlayer();
+        }
+
+        public float           CurrentHp            => combatState.enemy.hp;
+        public AttackDirection LastAttackDirection   => combatState.enemy.currentDirection;
+
+        public void NotifyHit(AttackDirection fromDirection)
+        {
+            animatorBridge?.ApplyHit(fromDirection);
+        }
+
+        public void NotifyDie()
+        {
+            enabled = false;                  // AI Update 루프 정지
+            animatorBridge?.ApplyDie();
+        }
+
         void Awake()
         {
             rb = GetComponent<Rigidbody>();
 
+            // Inspector에 연결 안 된 경우 자동 탐색
+            if (animatorBridge == null)
+                animatorBridge = GetComponentInChildren<EnemyAnimatorBridge>();
+
             combatState.personality = defaultPersonality;
-            combatState.difficulty = defaultDifficulty;
+            combatState.difficulty  = defaultDifficulty;
 
             SetBrain(BrainType.Utility);
             parryLearner.SetDifficulty(defaultDifficulty);
@@ -53,6 +96,7 @@ namespace Game.Combat.Execution
 
         void Update()
         {
+            // ── 액션 페이즈 드라이버 ──────────────────────────
             if (!combatState.useAnimationEventPhaseSync)
                 ActionPhaseDriver.Tick(combatState.enemy, Time.deltaTime);
             else if (combatState.enemy.currentAction != CombatAction.None)
@@ -61,41 +105,114 @@ namespace Game.Combat.Execution
             if (combatState.enableAutoRuntimeResolve)
                 CombatRuntimeResolver.TryResolveEnemyAttackAgainstPlayer(combatState);
 
-            // 거리 계산 후 distanceBucket 갱신
-            UpdateDistanceBucket();
+            // ── Engagement Phase 갱신 ─────────────────────────
+            UpdateEngagementPhase();
 
-            // Approaching 모드면 매 프레임 플레이어 방향으로 이동
-            if (combatState.currentTacticalMode == AITacticalMode.Approaching)
-                MoveTowardPlayer();
+            bool isMoving   = false;
+            bool isInCombat = (_engPhase == EngagementPhase.InCombat);
 
-            combatState.enemy.isMoving = (combatState.currentTacticalMode == AITacticalMode.Approaching);
-
-            if (animatorBridge != null)
+            switch (_engPhase)
             {
-                animatorBridge.ApplyPhase(combatState.enemy.currentPhase);
-                animatorBridge.ApplyParry(combatState.enemy.isParry);
-                animatorBridge.ApplyMoving(combatState.enemy.isMoving);
+                // ── 1. Approaching: Guard 없이 Walk로 직진 ──────────────────
+                case EngagementPhase.Approaching:
+                {
+                    isMoving = true;
+                    _wantsToMove = false;             // 전투 판단 이동과 분리
+                    combatState.distanceBucket = 1;
+                    combatState.currentTacticalMode = AITacticalMode.Approaching;
+                    MoveTowardPlayer();
+                    FaceTowardPlayer();   // 이동 불가 상황에서도 항상 상대 바라보기
+                    break;
+                }
+
+                // ── 2. InCombat: Guard 스탠스 + AI 판단 ──────────────────────
+                case EngagementPhase.InCombat:
+                {
+                    float dist = playerTransform != null
+                        ? Vector3.Distance(transform.position, playerTransform.position)
+                        : 0f;
+
+                    combatState.distanceBucket = dist <= attackRange ? 0 : 1;
+
+                    // 결정 틱: Animator 트랜지션 중이면 보류 (phase 어긋남 방지)
+                    bool animatorSettled = animatorBridge == null || !animatorBridge.IsInTransition();
+                    if (combatState.enemy.currentPhase == CombatPhase.Idle && animatorSettled)
+                    {
+                        decisionTimer -= Time.deltaTime;
+                        if (decisionTimer <= 0f)
+                        {
+                            // 이동 중: attackRange 도달 시에만 중지 (경계 진동 방지)
+                            // 정지 중: 거리 기반 확률로 이동 여부 결정
+                            if (_wantsToMove)
+                            {
+                                if (dist <= attackRange)
+                                    _wantsToMove = false;
+                            }
+                            else
+                            {
+                                float t = Mathf.Clamp01(
+                                    (dist - attackRange) / Mathf.Max(combatRange - attackRange, 0.01f));
+                                float moveProb = Mathf.Pow(t, moveCurvePow);
+                                _wantsToMove = dist > attackRange && Random.value < moveProb;
+                            }
+
+                            TickDecision();
+                            ResetDecisionTimer();
+                        }
+                    }
+                    else
+                    {
+                        _wantsToMove = false;
+                    }
+
+                    isMoving = _wantsToMove && dist > attackRange;
+                    if (isMoving)
+                        MoveTowardPlayer();
+                    else
+                        FaceTowardPlayer();
+
+                    combatState.currentTacticalMode = isMoving ? AITacticalMode.Approaching : AITacticalMode.None;
+                    break;
+                }
+
+                // ── 3. Unaware: Idle 대기 ──────────────────────────────────
+                default:
+                {
+                    _wantsToMove = false;
+                    combatState.currentTacticalMode = AITacticalMode.None;
+                    combatState.distanceBucket = 1;
+                    break;
+                }
             }
 
-            if (combatState.enemy.currentPhase != CombatPhase.Idle)
-                return;
+            combatState.enemy.isMoving = isMoving;
 
-            decisionTimer -= Time.deltaTime;
-
-            if (decisionTimer <= 0f)
+            // ── Animator 갱신 ─────────────────────────────────
+            if (animatorBridge != null)
             {
-                TickDecision();
-                ResetDecisionTimer();
+                animatorBridge.ApplyInCombat(isInCombat);
+                animatorBridge.ApplyMoving(isMoving);
+                animatorBridge.ApplyPhase(combatState.enemy.currentPhase);
+                animatorBridge.ApplyParry(combatState.enemy.isParry);
             }
         }
 
-        void UpdateDistanceBucket()
+        void UpdateEngagementPhase()
         {
-            if (playerTransform == null) return;
+            if (playerTransform == null)
+            {
+                _engPhase = EngagementPhase.Unaware;
+                return;
+            }
 
             float dist = Vector3.Distance(transform.position, playerTransform.position);
 
-            combatState.distanceBucket = dist <= attackRange ? 0 : 1;
+            if (dist > detectionRange)
+                _engPhase = EngagementPhase.Unaware;
+            else if (dist > combatRange)
+                _engPhase = EngagementPhase.Approaching;
+            else
+                _engPhase = EngagementPhase.InCombat;
         }
 
         void MoveTowardPlayer()
@@ -121,6 +238,16 @@ namespace Game.Combat.Execution
 
             // 플레이어 방향으로 회전
             if (dir != Vector3.zero)
+                rb.MoveRotation(Quaternion.LookRotation(dir));
+        }
+
+        void FaceTowardPlayer()
+        {
+            if (playerTransform == null || rb == null) return;
+
+            Vector3 dir = (playerTransform.position - transform.position);
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
                 rb.MoveRotation(Quaternion.LookRotation(dir));
         }
 

@@ -7,23 +7,88 @@ namespace Game.Animation.Bridges
     {
         [SerializeField] Animator animator;
 
-        static readonly int ActionTypeHash = Animator.StringToHash("ActionType");
-        static readonly int DirectionHash = Animator.StringToHash("Direction");
-        static readonly int PhaseHash = Animator.StringToHash("Phase");
+        static readonly int ActionTypeHash   = Animator.StringToHash("ActionType");
+        static readonly int DirectionHash    = Animator.StringToHash("Direction");
+        static readonly int PhaseHash        = Animator.StringToHash("Phase");
         static readonly int CommitActionHash = Animator.StringToHash("CommitAction");
-        static readonly int IsParryHash = Animator.StringToHash("IsParry");
-        static readonly int IsMovingHash = Animator.StringToHash("IsMove");
+        static readonly int IsParryHash      = Animator.StringToHash("IsParry");
+        static readonly int IsMovingHash     = Animator.StringToHash("IsMove");
+        static readonly int IsGuardWalkHash  = Animator.StringToHash("IsGuardWalk");
+        static readonly int IsInCombatHash   = Animator.StringToHash("IsInCombat");
 
+        void Awake()
+        {
+            if (animator == null)
+                animator = GetComponent<Animator>();          // 같은 오브젝트 먼저
+            if (animator == null)
+                animator = GetComponentInChildren<Animator>(); // 없으면 자식 탐색
+            if (animator == null)
+                animator = GetComponentInParent<Animator>();   // 그래도 없으면 부모 탐색
+
+            if (animator == null)
+                UnityEngine.Debug.LogError($"[EnemyAnimatorBridge] Animator를 찾을 수 없습니다: {gameObject.name}", this);
+        }
+
+        // ActionType 상수 (컨트롤러와 동기화)
+        const int AT_WAIT       = 0;
+        const int AT_ATTACK     = 1;
+        const int AT_GUARD      = 2;
+        const int AT_HIT        = 3;
+        const int AT_GUARDBREAK = 4;
+        const int AT_STUNT      = 5;
+        const int AT_DIE        = 6;
+
+        // ── AI 결정 액션 ──────────────────────────────────
         public void ApplyAction(CombatAction action)
         {
             if (animator == null)
                 return;
 
-            animator.SetInteger(ActionTypeHash, ToActionType(action));
-            animator.SetInteger(DirectionHash, ToDirection(action));
+            // Guard 방향 변경은 Direction float만 갱신 — CommitAction 불필요 (블렌드 트리가 즉시 반영)
+            bool isGuard = action == CombatAction.GuardTop
+                        || action == CombatAction.GuardLeft
+                        || action == CombatAction.GuardRight;
+
+            animator.SetFloat(DirectionHash, ToDirection(action));
+
+            if (!isGuard)
+            {
+                animator.SetInteger(ActionTypeHash, ToActionType(action));
+                animator.SetTrigger(CommitActionHash);
+            }
+        }
+
+        // ── 반응형 이벤트 (피격·사망 등 외부 트리거) ─────────
+        public void ApplyHit(AttackDirection fromDirection)
+        {
+            if (animator == null) return;
+            animator.SetInteger(ActionTypeHash, AT_HIT);
+            animator.SetFloat(DirectionHash, (float)fromDirection);
             animator.SetTrigger(CommitActionHash);
         }
 
+        public void ApplyGuardBreak()
+        {
+            if (animator == null) return;
+            animator.SetInteger(ActionTypeHash, AT_GUARDBREAK);
+            animator.SetTrigger(CommitActionHash);
+        }
+
+        public void ApplyStunt()
+        {
+            if (animator == null) return;
+            animator.SetInteger(ActionTypeHash, AT_STUNT);
+            animator.SetTrigger(CommitActionHash);
+        }
+
+        public void ApplyDie()
+        {
+            if (animator == null) return;
+            animator.SetInteger(ActionTypeHash, AT_DIE);
+            animator.SetTrigger(CommitActionHash);
+        }
+
+        // ── 상태 보조 ─────────────────────────────────────
         public void ApplyPhase(CombatPhase phase)
         {
             if (animator == null)
@@ -46,6 +111,22 @@ namespace Game.Animation.Bridges
                 return;
 
             animator.SetBool(IsMovingHash, isMoving);
+        }
+
+        public void ApplyGuardWalk(bool isGuardWalk)
+        {
+            if (animator == null)
+                return;
+
+            animator.SetBool(IsGuardWalkHash, isGuardWalk);
+        }
+
+        public void ApplyInCombat(bool isInCombat)
+        {
+            if (animator == null)
+                return;
+
+            animator.SetBool(IsInCombatHash, isInCombat);
         }
 
         public bool HasAnimator()
@@ -87,12 +168,12 @@ namespace Game.Animation.Bridges
             return animator.GetInteger(ActionTypeHash);
         }
 
-        public int GetDirectionValue()
+        public float GetDirectionValue()
         {
             if (animator == null)
-                return 0;
+                return 0f;
 
-            return animator.GetInteger(DirectionHash);
+            return animator.GetFloat(DirectionHash);
         }
 
         public int GetPhaseValue()
@@ -126,17 +207,17 @@ namespace Game.Animation.Bridges
             };
         }
 
-        int ToDirection(CombatAction action)
+        float ToDirection(CombatAction action)
         {
             return action switch
             {
-                CombatAction.AttackTopHeavy => (int)AttackDirection.Top,
-                CombatAction.AttackLeftHeavy => (int)AttackDirection.Left,
-                CombatAction.AttackRightHeavy => (int)AttackDirection.Right,
-                CombatAction.GuardTop => (int)AttackDirection.Top,
-                CombatAction.GuardLeft => (int)AttackDirection.Left,
-                CombatAction.GuardRight => (int)AttackDirection.Right,
-                _ => (int)AttackDirection.None
+                CombatAction.AttackTopHeavy   => (float)AttackDirection.Top,
+                CombatAction.AttackLeftHeavy  => (float)AttackDirection.Left,
+                CombatAction.AttackRightHeavy => (float)AttackDirection.Right,
+                CombatAction.GuardTop         => (float)AttackDirection.Top,
+                CombatAction.GuardLeft        => (float)AttackDirection.Left,
+                CombatAction.GuardRight       => (float)AttackDirection.Right,
+                _                             => (float)AttackDirection.None
             };
         }
     }

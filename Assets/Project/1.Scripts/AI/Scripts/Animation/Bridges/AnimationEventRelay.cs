@@ -10,6 +10,9 @@ namespace Game.Animation.Bridges
 
         bool IsReady()
         {
+            if(controller == null)
+                Debug.Log("AnimationEventRelay에 combatcontroller 없음");
+
             return controller != null && controller.State != null && controller.State.enemy != null;
         }
 

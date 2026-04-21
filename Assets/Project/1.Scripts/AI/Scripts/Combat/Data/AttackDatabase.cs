@@ -18,7 +18,7 @@ namespace Game.Combat.Data
                     Direction = AttackDirection.Top,
                     StartupMs = 800f,
                     ActiveMs = 100f,
-                    RecoveryMs = 500f,
+                    RecoveryMs = 150f,   // 500→150: Animator Idle 복귀 직후 바로 다음 결정
                     ParryWindowStartMs = 650f,
                     ParryWindowEndMs = 820f,
                     Damage = 24
@@ -33,7 +33,7 @@ namespace Game.Combat.Data
                     Direction = AttackDirection.Left,
                     StartupMs = 800f,
                     ActiveMs = 100f,
-                    RecoveryMs = 500f,
+                    RecoveryMs = 150f,
                     ParryWindowStartMs = 650f,
                     ParryWindowEndMs = 820f,
                     Damage = 27
@@ -48,7 +48,7 @@ namespace Game.Combat.Data
                     Direction = AttackDirection.Right,
                     StartupMs = 800f,
                     ActiveMs = 100f,
-                    RecoveryMs = 500f,
+                    RecoveryMs = 150f,
                     ParryWindowStartMs = 650f,
                     ParryWindowEndMs = 820f,
                     Damage = 27
