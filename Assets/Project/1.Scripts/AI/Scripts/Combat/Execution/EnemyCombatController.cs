@@ -1,3 +1,4 @@
+using System.Linq;
 using Game.AI.Brains;
 using Game.Combat.AI;
 using Game.Combat.State;
@@ -437,6 +438,87 @@ namespace Game.Combat.Execution
             result.TotalMs = totalWatch.Elapsed.TotalMilliseconds;
 
             return result;
+        }
+
+        // ─── Debug Snapshot (Editor/플레이 중 디버그 창에서 사용) ────────────
+        public struct AIDebugSnapshot
+        {
+            public string  ObjectName;
+
+            // Engagement
+            public string  EngagementPhase;
+            public float   DistToTarget;
+            public bool    WantsToMove;
+            public float   DecisionTimer;
+            public int     DistanceBucket;
+
+            // Combat state
+            public string  CombatPhase;
+            public string  CurrentAction;
+            public bool    IsGuarding;
+            public bool    IsMoving;
+            public float   Hp;
+
+            // Animator
+            public bool    AnimatorInTransition;
+            public bool    AnimatorSettled;
+            public string  AnimatorState;
+            public int     AnimActionType;
+            public float   AnimDirection;
+            public bool    AnimIsMoving;
+            public bool    AnimIsInCombat;
+        }
+
+        public AIDebugSnapshot GetDebugSnapshot()
+        {
+            float dist = playerTransform != null
+                ? Vector3.Distance(transform.position, playerTransform.position)
+                : -1f;
+
+            bool inTransition = animatorBridge != null && animatorBridge.IsInTransition();
+            bool settled      = animatorBridge == null || !inTransition;
+
+            return new AIDebugSnapshot
+            {
+                ObjectName          = gameObject.name,
+
+                EngagementPhase     = _engPhase.ToString(),
+                DistToTarget        = dist,
+                WantsToMove         = _wantsToMove,
+                DecisionTimer       = decisionTimer,
+                DistanceBucket      = combatState.distanceBucket,
+
+                CombatPhase         = combatState.enemy.currentPhase.ToString(),
+                CurrentAction       = combatState.enemy.currentAction.ToString(),
+                IsGuarding          = combatState.enemy.isGuarding,
+                IsMoving            = combatState.enemy.isMoving,
+                Hp                  = combatState.enemy.hp,
+
+                AnimatorInTransition = inTransition,
+                AnimatorSettled      = settled,
+                AnimatorState        = animatorBridge != null ? animatorBridge.GetCurrentStateFullName() : "none",
+                AnimActionType       = animatorBridge != null ? animatorBridge.GetActionTypeValue()  : -1,
+                AnimDirection        = animatorBridge != null ? animatorBridge.GetDirectionValue()   : -1f,
+                AnimIsMoving         = animatorBridge != null && animatorBridge.GetIsMovingValue(),
+                AnimIsInCombat       = animatorBridge != null && animatorBridge.GetIsInCombatValue(),
+            };
+        }
+
+        public string GetActionCandidatesLog()
+        {
+            EnsureBrainInitialized();
+            if (currentBrain == null) return "brain is null";
+
+            if (!(currentBrain is UtilityBrain ub)) return "not a UtilityBrain";
+
+            var obs  = ObservationBuilder.Build(combatState, parryLearner);
+            var list = ub.GetCandidates(in obs);
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[{gameObject.name}] Action Candidates  (dist={obs.DistanceBucket} bucket, hasFrAdv={obs.HasFrameAdvantage})");
+            foreach (var c in list.OrderByDescending(x => x.Score))
+                sb.AppendLine($"  {c.Action,-24} {c.Score:+0.00;-0.00}");
+            return sb.ToString();
         }
     }
 }

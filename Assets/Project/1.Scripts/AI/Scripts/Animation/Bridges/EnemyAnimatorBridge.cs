@@ -192,6 +192,32 @@ namespace Game.Animation.Bridges
             return animator.GetBool(IsParryHash);
         }
 
+        public bool GetIsMovingValue()
+        {
+            if (animator == null) return false;
+            return animator.GetBool(IsMovingHash);
+        }
+
+        public bool GetIsInCombatValue()
+        {
+            if (animator == null) return false;
+            return animator.GetBool(IsInCombatHash);
+        }
+
+        public string GetCurrentStateFullName()
+        {
+            if (animator == null) return "NoAnimator";
+            // 트랜지션 중이면 destination 상태명도 함께 반환
+            if (animator.IsInTransition(0))
+            {
+                var next = animator.GetNextAnimatorStateInfo(0);
+                var curr = animator.GetCurrentAnimatorStateInfo(0);
+                return $"{curr.shortNameHash} → {next.shortNameHash} (t={animator.GetAnimatorTransitionInfo(0).normalizedTime:F2})";
+            }
+            var info = animator.GetCurrentAnimatorStateInfo(0);
+            return $"hash={info.shortNameHash} norm={info.normalizedTime:F2}";
+        }
+
         int ToActionType(CombatAction action)
         {
             return action switch
