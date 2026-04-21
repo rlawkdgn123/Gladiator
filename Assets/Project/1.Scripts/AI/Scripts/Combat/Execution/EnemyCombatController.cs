@@ -26,7 +26,7 @@ namespace Game.Combat.Execution
 
         [Header("Movement")]
         [SerializeField] Transform playerTransform;
-        [SerializeField] float attackRange = 2.0f;
+        [SerializeField] float attackRange = 1.8f;
         [SerializeField] float moveSpeed = 1.5f;
 
         [Header("References")]
@@ -34,10 +34,10 @@ namespace Game.Combat.Execution
 
         [Header("Detection & Engagement")]
         [SerializeField] float detectionRange = 30f;  // 인지 범위: 이 안에 들어오면 Walk로 접근
-        [SerializeField] float combatRange    = 5f;   // 전투 전환 범위: 이 안에 들어오면 Guard + AI 판단 시작
+        [SerializeField] float combatRange    = 6f;   // 전투 전환 범위: 이 안에 들어오면 Guard + AI 판단 시작
 
         // 거리 → 이동 가중치 커브 제어 (값이 낮을수록 가까울 때 이동 선호가 급격히 낮아짐)
-        [SerializeField] [Range(0.1f, 1f)] float moveCurvePow = 0.35f;
+        [SerializeField] [Range(0.1f, 1f)] float moveCurvePow = 0.5f;
 
         // ── Unaware  : playerTransform 없거나 detectionRange 밖
         // ── Approaching : detectionRange 이내, combatRange 밖 → Walk 접근 (판단 없음)
@@ -160,8 +160,10 @@ namespace Game.Combat.Execution
                             ResetDecisionTimer();
                         }
                     }
-                    else
+                    else if (combatState.enemy.currentPhase != CombatPhase.Idle)
                     {
+                        // 공격/피격/회복 페이즈 중에만 이동 취소
+                        // 단순 Animator 트랜지션 중에는 _wantsToMove 유지 (Guard→GuardWalk 깜빡임 방지)
                         _wantsToMove = false;
                     }
 
