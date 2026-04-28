@@ -1,13 +1,13 @@
 {
   "dependencies": {
-    "com.community.unity-mcp": {
-      "version": "file:com.community.unity-mcp",
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
       "depth": 0,
-      "source": "embedded",
+      "source": "builtin",
       "dependencies": {}
     },
     "com.unity.ai.navigation": {
-      "version": "2.0.11",
+      "version": "2.0.12",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -43,11 +43,12 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.cinemachine": {
-      "version": "3.1.2",
+      "version": "3.1.6",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.splines": "2.0.0"
+        "com.unity.splines": "2.0.0",
+        "com.unity.modules.imgui": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },
@@ -99,7 +100,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.26",
+      "version": "2.0.27",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -177,15 +178,6 @@
         "com.unity.render-pipelines.core": "17.0.3"
       }
     },
-    "com.youngwoocho02.unity-cli-connector": {
-      "version": "https://github.com/INT-smashed/unity-cli-expand.git?path=unity-connector",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.unity.nuget.newtonsoft-json": "3.2.1"
-      },
-      "hash": "433e0dff486e0dfc267a997117e1625f7117383c"
-    },
     "com.unity.searcher": {
       "version": "4.9.4",
       "depth": 2,
@@ -220,16 +212,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.terrain-tools": {
-      "version": "5.3.2",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.terrain": "1.0.0",
-        "com.unity.modules.terrainphysics": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.test-framework": {
       "version": "1.6.0",
       "depth": 0,
@@ -251,7 +233,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.timeline": {
-      "version": "1.8.11",
+      "version": "1.8.12",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -297,7 +279,7 @@
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       },
-      "hash": "5fef10c26bf14433c3c3b498e20d7c018430e799"
+      "hash": "48d8559642b64a61e64f3cc8713c23fc6dc7a160"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
