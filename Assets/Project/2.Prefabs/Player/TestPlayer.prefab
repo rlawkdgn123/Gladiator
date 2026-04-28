@@ -653,6 +653,7 @@ GameObject:
   - component: {fileID: 171170765291258589}
   - component: {fileID: 6316486340899559867}
   - component: {fileID: 6949024184485237205}
+  - component: {fileID: 6564737251273146709}
   m_Layer: 6
   m_Name: TestPlayer
   m_TagString: Player
@@ -743,7 +744,7 @@ Animator:
   m_Controller: {fileID: 9100000, guid: 795646f5b492cc44f848897982780d5f, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
@@ -864,7 +865,7 @@ MonoBehaviour:
     PlayerInput: {fileID: 1076013023516203641}
     InputHandler: {fileID: 171170765291258589}
     FocusAim: {fileID: 0}
-    GuardIndicator: {fileID: 505816623197693300}
+    PlayerGuardIndicator: {fileID: 0}
     PlayerStatus: {fileID: 6949024184485237205}
     PlayerWeapon: {fileID: 833079664064156188}
     CursorManager: {fileID: 0}
@@ -889,7 +890,8 @@ MonoBehaviour:
     MoveAmountLerpSpeed: 10
     FocusMoveInputLerpSpeed: 12
     DefaultMoveDirectionLerpSpeed: 12
-    FocusTargetLerpSpeed: 0.25
+    FocusTargetLerpSpeed: 0.3
+    FocusMinDistance: 0.75
     Gravity: -9.81
     DetectRadius: 2.5
     DetectAimDistance: 30
@@ -912,6 +914,8 @@ MonoBehaviour:
     HasLockedMoveDirection: 0
     IsAttacking: 0
     IsParrying: 0
+    CanNextAttack: 0
+    HasNextAttackInput: 0
   m_currentValue:
     MoveAmount: 0
     TargetMoveAmount: 0
@@ -936,16 +940,14 @@ MonoBehaviour:
     PreviousFocusTarget: {fileID: 0}
     FocusEnterTargetRotation: {x: 0, y: 0, z: 0, w: 0}
   m_status:
-    MaxHealth: 0
-    CurrentHealth: 0
     MaxStamina: 0
     CurrentStamina: 0
+    AttackSpeed: 220
     RotateSpeed: 220
     TurningMoveSpeed: 2
     SprintSpeed: 9
     RunningSpeed: 6
     WalkSpeed: 2.5
-    Strangth: 0
 --- !u!114 &6949024184485237205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -959,16 +961,56 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatus
   m_status:
-    MaxHealth: 0
-    CurrentHealth: 0
     MaxStamina: 0
     CurrentStamina: 0
+    AttackSpeed: 220
     RotateSpeed: 220
     TurningMoveSpeed: 5
     SprintSpeed: 9
     RunningSpeed: 6
     WalkSpeed: 2.5
-    Strangth: 0
+--- !u!114 &6564737251273146709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2199303555323358887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a4a3ef8fc487cd46aff20a6c22d3a85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
+  m_health:
+    BodyHealthPersent: 0
+    MaxBodyHealth: 0
+    CurrentBodyHealth: 0
+    m_head:
+      HealthPersent: 0
+      MaxHealth: 0
+      CurrentHealth: 0
+      HealthState: 0
+    m_leftArm:
+      HealthPersent: 0
+      MaxHealth: 0
+      CurrentHealth: 0
+      HealthState: 0
+    m_rightArm:
+      HealthPersent: 0
+      MaxHealth: 0
+      CurrentHealth: 0
+      HealthState: 0
+    m_leftLeg:
+      HealthPersent: 0
+      MaxHealth: 0
+      CurrentHealth: 0
+      HealthState: 0
+    m_rightLeg:
+      HealthPersent: 0
+      MaxHealth: 0
+      CurrentHealth: 0
+      HealthState: 0
+  m_animator: {fileID: 0}
 --- !u!1 &2231005131820902527
 GameObject:
   m_ObjectHideFlags: 0
@@ -1691,7 +1733,7 @@ GameObject:
   - component: {fileID: 3882006177542993651}
   m_Layer: 6
   m_Name: Sword
-  m_TagString: Untagged
+  m_TagString: Weapon
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1724,7 +1766,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   Damage: 0
-  Rank: 0
+  ArmorLethality: 0
+  ArmorPenetration: 0
+  OwnerTeam: 0
   m_collider: {fileID: 0}
 --- !u!65 &3882006177542993651
 BoxCollider:
@@ -2061,7 +2105,7 @@ Transform:
   m_GameObject: {fileID: 5735106076433348306}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.55, y: 0, z: 0}
+  m_LocalPosition: {x: 0.867, y: 0.043, z: 0.89}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2604,7 +2648,7 @@ Transform:
   m_GameObject: {fileID: 6897689144094047212}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.55, y: 0, z: 0}
+  m_LocalPosition: {x: -0.867, y: 0.043, z: 0.89}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2703,7 +2747,6 @@ MonoBehaviour:
     Animator: {fileID: 0}
     IndicatorAnchor: {fileID: 3153570930313697397}
     IndicatorCanvas: {fileID: 5144717814929429801}
-    PlayerController: {fileID: 6316486340899559867}
     MainCamera: {fileID: 0}
   m_checkOption:
     GuardZone: 1
@@ -2717,6 +2760,10 @@ MonoBehaviour:
     - {fileID: 1803418253, guid: 17c07ca71e77f8547afbc64fa89e0ee1, type: 3}
     - {fileID: 0}
     - {fileID: 0}
+  m_status:
+    MaxHealth: 0
+    CurrentHealth: 0
+    HealthRecoveryRate: 0
 --- !u!1 &7395249712736497834
 GameObject:
   m_ObjectHideFlags: 0
@@ -3156,14 +3203,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12b376d1ed332064aa7778f3b6c8bc14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  m_playerGuardIndicators:
-  - {fileID: 505816623197693300}
-  - {fileID: 2806338051143103487}
-  - {fileID: 2886177329619245350}
-  m_playerGuardIndicatorImages: []
-  m_playerController: {fileID: 6316486340899559867}
+  m_guardIndicators: []
   m_cursorManager: {fileID: 0}
   m_OffAlpha: 0.3
+  m_playerController: {fileID: 6316486340899559867}
 --- !u!1 &7590183525154331955
 GameObject:
   m_ObjectHideFlags: 0
@@ -3390,7 +3433,6 @@ MonoBehaviour:
     Animator: {fileID: 0}
     IndicatorAnchor: {fileID: 3153570930313697397}
     IndicatorCanvas: {fileID: 5144717814929429801}
-    PlayerController: {fileID: 6316486340899559867}
     MainCamera: {fileID: 0}
   m_checkOption:
     GuardZone: 3
@@ -3404,6 +3446,10 @@ MonoBehaviour:
     - {fileID: 1803418253, guid: 17c07ca71e77f8547afbc64fa89e0ee1, type: 3}
     - {fileID: 0}
     - {fileID: 0}
+  m_status:
+    MaxHealth: 0
+    CurrentHealth: 0
+    HealthRecoveryRate: 0
 --- !u!1 &7967600596467203161
 GameObject:
   m_ObjectHideFlags: 0
@@ -3497,7 +3543,6 @@ MonoBehaviour:
     Animator: {fileID: 0}
     IndicatorAnchor: {fileID: 3153570930313697397}
     IndicatorCanvas: {fileID: 5144717814929429801}
-    PlayerController: {fileID: 6316486340899559867}
     MainCamera: {fileID: 0}
   m_checkOption:
     GuardZone: 2
@@ -3511,6 +3556,10 @@ MonoBehaviour:
     - {fileID: 1803418253, guid: 17c07ca71e77f8547afbc64fa89e0ee1, type: 3}
     - {fileID: 0}
     - {fileID: 0}
+  m_status:
+    MaxHealth: 0
+    CurrentHealth: 0
+    HealthRecoveryRate: 0
 --- !u!1 &8129975869535240055
 GameObject:
   m_ObjectHideFlags: 0
@@ -3536,7 +3585,7 @@ Transform:
   m_GameObject: {fileID: 8129975869535240055}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.333, y: 1.629, z: 0.5}
+  m_LocalPosition: {x: -0.197, y: 0.977, z: 1.438}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

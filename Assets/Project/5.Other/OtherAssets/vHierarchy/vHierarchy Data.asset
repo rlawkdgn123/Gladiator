@@ -15,6 +15,7 @@ MonoBehaviour:
   sceneDatas_byGuid:
     keys:
     - d59f926e920f87e469e7ca2ba43340c6
+    - ff8dff7bba57d2e44841636b3b076f9e
     values:
     - goDatas_byGlobalId:
         keys:
@@ -62,6 +63,254 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 2
           iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-126315556-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-718344639-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-8928684637308751796-1602820697
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-8928684637308751796-205381101
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-8928684637308751796-1569563603
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-245802555807421891-236268235413350334
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-1234171582-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-245802555807421891-586840519
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-2199303555323358887-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-577340952-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-1382798198-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-416774082-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-783440818-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-410087039-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-832575517-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-330585543-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-2897092536715369504-1170108347
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-835660498-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-8399901285299095899-1825010704
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-3108608551969257580-1825010704
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-6696804249712811476-1825010704
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-6054468943528403548-308933275
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-5721466591612581190-308933275
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-4307401464519467880-308933275
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-1210311206
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-756389865
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-291947516
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-1670436848
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-1951768376
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-596690220
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-1116480835
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-649195881
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-1927752663
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-919132149155446097-132445993
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-690089446-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-1350134385-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-605481730-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-80975012-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-2034240564-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-580028690-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-2143084735-0
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-5143823617534545345-1720284431
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-5371727708070480904-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-5468348959673967134-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-7521975492067182717-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-3473649924239354394-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-8129975869535240055-512802142
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-4260557810908761524-308933275
+        - globalObjectIdString: GlobalObjectId_V1-2-ff8dff7bba57d2e44841636b3b076f9e-6912763373973854752-308933275
+        values:
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: StandaloneInputModule Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: Light Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: Light Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: Terrain Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: Terrain Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: Light Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: LightmapParameters Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: StandaloneInputModule Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: Settings Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 4
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: Terrain Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 3
+          iconNameOrGuid: Light Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Rigidbody Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: 
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: StandaloneInputModule Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 7
+          iconNameOrGuid: 
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks:
