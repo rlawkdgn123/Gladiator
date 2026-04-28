@@ -42,8 +42,7 @@ public class CameraFollowPivot : MonoBehaviour
             return;
 
         if (m_playerController != null
-            && m_playerController.States.IsFocusing
-            && m_playerController.Values.FocusTarget == null)
+            && m_playerController.GetIsFocusing())
         {
             transform.rotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
             return;
@@ -51,7 +50,6 @@ public class CameraFollowPivot : MonoBehaviour
 
         Vector2 lookInput = m_cursorManager.GetLookVector();
 
-        
         m_yaw += lookInput.x * m_panSpeed;
 
         float pitchDelta = lookInput.y * m_tiltSpeed * (m_invertY ? 1f : -1f);

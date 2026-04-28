@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Enemy
   - SubCamera
+  - Weapon
   layers:
   - Default
   - TransparentFX

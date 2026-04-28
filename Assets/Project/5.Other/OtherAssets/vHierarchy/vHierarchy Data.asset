@@ -45,7 +45,7 @@ MonoBehaviour:
           isIconRecursive: 0
           isColorRecursive: 1
         - colorIndex: 2
-          iconNameOrGuid: 
+          iconNameOrGuid: AvatarMask On Icon
           isIconRecursive: 0
           isColorRecursive: 1
         - colorIndex: 7
@@ -61,8 +61,14 @@ MonoBehaviour:
           isIconRecursive: 0
           isColorRecursive: 0
         - colorIndex: 2
-          iconNameOrGuid: 
+          iconNameOrGuid: AvatarMask On Icon
           isIconRecursive: 0
           isColorRecursive: 0
-  bookmarks: []
+  bookmarks:
+  - _go: {fileID: 0}
+    globalId:
+      globalObjectIdString: GlobalObjectId_V1-2-3ca0b0188eed59944a2ac0b2e4f427e2-4721978065767021194-4918474987712635247
+  - _go: {fileID: 0}
+    globalId:
+      globalObjectIdString: GlobalObjectId_V1-2-3ca0b0188eed59944a2ac0b2e4f427e2-2199303555323358887-4918474987712635247
   bookmarkedScenePaths: []
