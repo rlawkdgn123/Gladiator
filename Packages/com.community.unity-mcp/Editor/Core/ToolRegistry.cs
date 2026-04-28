@@ -111,7 +111,7 @@ namespace Community.Unity.MCP
                                 ArgsType = attr.ArgsType
                             };
 
-                            Debug.Log($"[MCP] Registered tool: {attr.Name}");
+                            //Debug.Log($"[MCP] Registered tool: {attr.Name}");
                         }
                     }
                 }

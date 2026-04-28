@@ -19,10 +19,14 @@ namespace Community.Unity.MCP
         [Serializable] public class AddStateArgs           { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Name of the new state", Required = true)] public string stateName; [McpParam("Layer index (default 0)")] public int layerIndex; }
         [Serializable] public class SetMotionArgs          { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Name of the state", Required = true)] public string stateName; [McpParam("Path to the AnimationClip asset", Required = true)] public string clipPath; [McpParam("Layer index (default 0)")] public int layerIndex; }
         [Serializable] public class AddParameterArgs       { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Parameter name", Required = true)] public string paramName; [McpParam("Parameter type: Float, Int, Bool, Trigger", Required = true, EnumValues = new[] { "Float", "Int", "Bool", "Trigger" })] public string paramType; }
-        [Serializable] public class AddTransitionArgs      { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Source state name", Required = true)] public string fromState; [McpParam("Destination state name", Required = true)] public string toState; [McpParam("Layer index (default 0)")] public int layerIndex; [McpParam("Exit time (0-1, normalized)")] public float exitTime; [McpParam("Transition duration")] public float duration; [McpParam("Whether the transition uses exit time")] public bool hasExitTime; }
+        [Serializable] public class AddTransitionArgs      { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Source state name, or 'Any State' for any-state transition", Required = true)] public string fromState; [McpParam("Destination state name", Required = true)] public string toState; [McpParam("Layer index (default 0)")] public int layerIndex; [McpParam("Exit time (0-1, normalized)")] public float exitTime; [McpParam("Transition duration")] public float duration; [McpParam("Whether the transition uses exit time")] public bool hasExitTime; [McpParam("Prevent re-entering the same state (Any State only, default true)")] public bool canTransitionToSelf; }
         [Serializable] public class SetConditionArgs       { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Source state name", Required = true)] public string fromState; [McpParam("Destination state name", Required = true)] public string toState; [McpParam("Parameter name", Required = true)] public string paramName; [McpParam("Condition mode: Greater, Less, Equals, NotEqual, If, IfNot", Required = true, EnumValues = new[] { "Greater", "Less", "Equals", "NotEqual", "If", "IfNot" })] public string conditionMode; [McpParam("Threshold value for numeric parameters")] public float threshold; [McpParam("Layer index (default 0)")] public int layerIndex; }
         [Serializable] public class SetDefaultStateArgs    { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("State name to set as default", Required = true)] public string stateName; [McpParam("Layer index (default 0)")] public int layerIndex; }
         [Serializable] public class AddLayerArgs           { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Name for the new layer", Required = true)] public string layerName; [McpParam("Layer weight (default 1.0)")] public float weight; }
+
+        // Blend Tree
+        [Serializable] public class CreateBlendTreeArgs   { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Name of the blend tree state", Required = true)] public string stateName; [McpParam("Parameter name used for blending (must already exist)", Required = true)] public string blendParam; [McpParam("Layer index (default 0)")] public int layerIndex; }
+        [Serializable] public class AddBlendTreeChildArgs { [McpParam("Path to the AnimatorController asset", Required = true)] public string controllerPath; [McpParam("Name of the blend tree state", Required = true)] public string stateName; [McpParam("Path to the AnimationClip asset", Required = true)] public string clipPath; [McpParam("Blend threshold value for this clip", Required = true)] public float threshold; [McpParam("Layer index (default 0)")] public int layerIndex; }
 
         // ──────────────────────────────────────────────
         // Helpers
@@ -201,7 +205,7 @@ namespace Community.Unity.MCP
             return new { success = true, paramName = args.paramName, paramType = args.paramType };
         }
 
-        [McpTool("unity_add_animator_transition", "Adds a transition between two states in an AnimatorController.", typeof(AddTransitionArgs))]
+        [McpTool("unity_add_animator_transition", "Adds a transition between two states in an AnimatorController. Use 'Any State' as fromState for any-state transitions.", typeof(AddTransitionArgs))]
         public static object AddAnimatorTransition(string argsJson)
         {
             var args = JsonUtility.FromJson<AddTransitionArgs>(argsJson);
@@ -215,19 +219,32 @@ namespace Community.Unity.MCP
                 return new { error = $"layerIndex {args.layerIndex} is out of range." };
 
             var sm = ctrl.layers[args.layerIndex].stateMachine;
-            var from = FindState(sm, args.fromState);
-            if (from == null) return new { error = $"State '{args.fromState}' not found." };
             var to = FindState(sm, args.toState);
             if (to == null) return new { error = $"State '{args.toState}' not found." };
 
-            var t = from.AddTransition(to);
+            bool isAnyState = args.fromState.Replace(" ", "").ToLower() == "anystate";
+            AnimatorStateTransition t;
+
+            if (isAnyState)
+            {
+                t = sm.AddAnyStateTransition(to);
+                // canTransitionToSelf 기본값: false (args 기본값 false 그대로 사용)
+                t.canTransitionToSelf = args.canTransitionToSelf;
+            }
+            else
+            {
+                var from = FindState(sm, args.fromState);
+                if (from == null) return new { error = $"State '{args.fromState}' not found." };
+                t = from.AddTransition(to);
+            }
+
             t.hasExitTime = args.hasExitTime;
             t.exitTime    = args.exitTime;
             t.duration    = args.duration;
 
             EditorUtility.SetDirty(ctrl);
             AssetDatabase.SaveAssets();
-            return new { success = true, from = args.fromState, to = args.toState, hasExitTime = t.hasExitTime };
+            return new { success = true, from = args.fromState, to = args.toState, hasExitTime = t.hasExitTime, isAnyState };
         }
 
         [McpTool("unity_set_transition_condition", "Adds a condition to a transition between two states.", typeof(SetConditionArgs))]
@@ -246,8 +263,6 @@ namespace Community.Unity.MCP
                 return new { error = $"layerIndex out of range." };
 
             var sm = ctrl.layers[args.layerIndex].stateMachine;
-            var from = FindState(sm, args.fromState);
-            if (from == null) return new { error = $"State '{args.fromState}' not found." };
 
             AnimatorConditionMode mode;
             switch (args.conditionMode.ToLower())
@@ -261,14 +276,33 @@ namespace Community.Unity.MCP
                 default: return new { error = $"Unknown conditionMode '{args.conditionMode}'." };
             }
 
+            bool isAnyState = args.fromState.Replace(" ", "").ToLower() == "anystate";
             bool applied = false;
-            foreach (var t in from.transitions)
+
+            if (isAnyState)
             {
-                if (t.destinationState != null && t.destinationState.name == args.toState)
+                foreach (var t in sm.anyStateTransitions)
                 {
-                    t.AddCondition(mode, args.threshold, args.paramName);
-                    applied = true;
-                    break;
+                    if (t.destinationState != null && t.destinationState.name == args.toState)
+                    {
+                        t.AddCondition(mode, args.threshold, args.paramName);
+                        applied = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                var from = FindState(sm, args.fromState);
+                if (from == null) return new { error = $"State '{args.fromState}' not found." };
+                foreach (var t in from.transitions)
+                {
+                    if (t.destinationState != null && t.destinationState.name == args.toState)
+                    {
+                        t.AddCondition(mode, args.threshold, args.paramName);
+                        applied = true;
+                        break;
+                    }
                 }
             }
 
@@ -300,6 +334,78 @@ namespace Community.Unity.MCP
             EditorUtility.SetDirty(ctrl);
             AssetDatabase.SaveAssets();
             return new { success = true, defaultState = args.stateName, layerIndex = args.layerIndex };
+        }
+
+        [McpTool("unity_create_blend_tree", "Creates a 1D blend tree state in an AnimatorController layer. Use unity_add_blend_tree_child to add clips afterwards.", typeof(CreateBlendTreeArgs))]
+        public static object CreateBlendTree(string argsJson)
+        {
+            var args = JsonUtility.FromJson<CreateBlendTreeArgs>(argsJson);
+            if (string.IsNullOrEmpty(args.controllerPath)) return new { error = "controllerPath is required." };
+            if (string.IsNullOrEmpty(args.stateName))      return new { error = "stateName is required." };
+            if (string.IsNullOrEmpty(args.blendParam))     return new { error = "blendParam is required." };
+
+            var ctrl = LoadController(args.controllerPath);
+            if (ctrl == null) return new { error = $"AnimatorController not found at '{args.controllerPath}'." };
+            if (args.layerIndex < 0 || args.layerIndex >= ctrl.layers.Length)
+                return new { error = $"layerIndex {args.layerIndex} is out of range." };
+
+            // 같은 이름 상태가 이미 있으면 거부
+            var sm = ctrl.layers[args.layerIndex].stateMachine;
+            if (FindState(sm, args.stateName) != null)
+                return new { error = $"State '{args.stateName}' already exists." };
+
+            // 파라미터 존재 여부 확인
+            bool paramFound = false;
+            foreach (var p in ctrl.parameters) if (p.name == args.blendParam) { paramFound = true; break; }
+            if (!paramFound) return new { error = $"Parameter '{args.blendParam}' not found. Add it first." };
+
+            var state = ctrl.CreateBlendTreeInController(args.stateName, out var bt, args.layerIndex);
+            bt.blendType              = BlendTreeType.Simple1D;
+            bt.blendParameter         = args.blendParam;
+            bt.useAutomaticThresholds = false;
+
+            EditorUtility.SetDirty(ctrl);
+            AssetDatabase.SaveAssets();
+            return new { success = true, stateName = args.stateName, blendParam = args.blendParam, layerIndex = args.layerIndex };
+        }
+
+        [McpTool("unity_add_blend_tree_child", "Adds an AnimationClip child with a threshold to an existing 1D blend tree state.", typeof(AddBlendTreeChildArgs))]
+        public static object AddBlendTreeChild(string argsJson)
+        {
+            var args = JsonUtility.FromJson<AddBlendTreeChildArgs>(argsJson);
+            if (string.IsNullOrEmpty(args.controllerPath)) return new { error = "controllerPath is required." };
+            if (string.IsNullOrEmpty(args.stateName))      return new { error = "stateName is required." };
+            if (string.IsNullOrEmpty(args.clipPath))       return new { error = "clipPath is required." };
+
+            var ctrl = LoadController(args.controllerPath);
+            if (ctrl == null) return new { error = $"AnimatorController not found at '{args.controllerPath}'." };
+            if (args.layerIndex < 0 || args.layerIndex >= ctrl.layers.Length)
+                return new { error = $"layerIndex {args.layerIndex} is out of range." };
+
+            var sm = ctrl.layers[args.layerIndex].stateMachine;
+            var state = FindState(sm, args.stateName);
+            if (state == null) return new { error = $"State '{args.stateName}' not found." };
+
+            var bt = state.motion as BlendTree;
+            if (bt == null) return new { error = $"State '{args.stateName}' is not a blend tree." };
+
+            // FBX 등 복합 에셋에서 첫 번째 AnimationClip을 추출
+            AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(args.clipPath);
+            if (clip == null)
+            {
+                foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(args.clipPath))
+                {
+                    if (obj is AnimationClip c && !c.name.StartsWith("__preview__"))
+                    { clip = c; break; }
+                }
+            }
+            if (clip == null) return new { error = $"AnimationClip not found at '{args.clipPath}'." };
+
+            bt.AddChild(clip, args.threshold);
+
+            EditorUtility.SetDirty(ctrl);
+            AssetDatabase.SaveAssets();
+            return new { success = true, stateName = args.stateName, clipName = clip.name, threshold = args.threshold };
         }
 
         [McpTool("unity_add_animator_layer", "Adds a new layer to an AnimatorController.", typeof(AddLayerArgs))]

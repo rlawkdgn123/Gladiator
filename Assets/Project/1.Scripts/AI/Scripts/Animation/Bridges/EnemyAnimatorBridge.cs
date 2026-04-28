@@ -6,6 +6,7 @@ namespace Game.Animation.Bridges
     public class EnemyAnimatorBridge : MonoBehaviour
     {
         [SerializeField] Animator animator;
+        public Animator Animator => animator;
 
         static readonly int ActionTypeHash   = Animator.StringToHash("ActionType");
         static readonly int DirectionHash    = Animator.StringToHash("Direction");
@@ -27,6 +28,8 @@ namespace Game.Animation.Bridges
 
             if (animator == null)
                 UnityEngine.Debug.LogError($"[EnemyAnimatorBridge] Animator를 찾을 수 없습니다: {gameObject.name}", this);
+            else if (animator.applyRootMotion)
+                animator.applyRootMotion = false;
         }
 
         // ActionType 상수 (컨트롤러와 동기화)
@@ -59,12 +62,19 @@ namespace Game.Animation.Bridges
         }
 
         // ── 반응형 이벤트 (피격·사망 등 외부 트리거) ─────────
+        static readonly int HitStateHash = Animator.StringToHash("Hit");
+
         public void ApplyHit(AttackDirection fromDirection)
         {
             if (animator == null) return;
+
+            // Attack→Guard 같은 Has Exit Time transition이 진행 중이면 Any State→Hit 가
+            // 묻혀버리고, 다음 결정 틱이 ActionType을 1로 덮어써서 Hit이 안 뜸.
+            // → trigger 의존을 버리고 Play()로 강제 전이. transition 검사 자체를 우회.
+            animator.ResetTrigger(CommitActionHash);
             animator.SetInteger(ActionTypeHash, AT_HIT);
             animator.SetFloat(DirectionHash, (float)fromDirection);
-            animator.SetTrigger(CommitActionHash);
+            animator.Play(HitStateHash, 0, 0f);
         }
 
         public void ApplyGuardBreak()
@@ -119,6 +129,17 @@ namespace Game.Animation.Bridges
                 return;
 
             animator.SetBool(IsGuardWalkHash, isGuardWalk);
+        }
+
+        public void ApplyGuardWalkDirection(GuardWalkDirection direction)
+        {
+            if (animator == null)
+                return;
+
+            if (direction == GuardWalkDirection.None)
+                return;
+
+            animator.SetFloat(DirectionHash, (float)direction);
         }
 
         public void ApplyInCombat(bool isInCombat)

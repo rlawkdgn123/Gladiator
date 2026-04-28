@@ -69,8 +69,8 @@ namespace Game.Combat.Systems
             bool isDirectHit = action switch
             {
                 CombatAction.AttackTopHeavy   => state.player.injury.head,
-                CombatAction.AttackLeftHeavy  => state.player.injury.rightarm,
-                CombatAction.AttackRightHeavy => state.player.injury.leftarm,
+                CombatAction.AttackLeftHeavy  => state.player.injury.rightArm,
+                CombatAction.AttackRightHeavy => state.player.injury.leftArm,
                 _                             => false
             };
 

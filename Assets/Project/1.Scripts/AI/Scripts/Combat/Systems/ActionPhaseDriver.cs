@@ -9,11 +9,24 @@ namespace Game.Combat.Systems
     {
         public static void Tick(FighterState fighter, float deltaTime)
         {
-            if(fighter == null) 
+            if(fighter == null)
                 return;
 
-            if(fighter.currentAction == CombatAction.None)
+            // Action=None인데 Phase가 Idle이 아닌 비정상 상태 → Idle로 강제 복귀.
+            // (외부에서 action만 None으로 리셋되고 phase가 안 풀린 경우 데드락 방지)
+            if (fighter.currentAction == CombatAction.None)
+            {
+                if (fighter.currentPhase != CombatPhase.Idle)
+                {
+                    fighter.currentPhase = CombatPhase.Idle;
+                    fighter.currentDirection = AttackDirection.None;
+                    fighter.phaseElapsedMs = 0f;
+                    fighter.actionElapsedMs = 0f;
+                    fighter.isParry = false;
+                    fighter.hasResolvedThisAction = false;
+                }
                 return;
+            }
 
             if (!AttackDatabase.TryGet(fighter.currentAction, out var attackData))
                 return;

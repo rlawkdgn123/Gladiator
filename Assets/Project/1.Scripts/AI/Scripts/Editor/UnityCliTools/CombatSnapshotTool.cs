@@ -34,10 +34,10 @@ namespace Game.Editor.DebugCLI.Tools
                     },
                     injury = new
                     {
-                        leftArm = state.player.injury.leftarm,
-                        rightArm = state.player.injury.rightarm,
-                        leftLeg = state.player.injury.leftleg,
-                        rightLeg = state.player.injury.rightleg,
+                        leftArm = state.player.injury.leftArm,
+                        rightArm = state.player.injury.rightArm,
+                        leftLeg = state.player.injury.leftLeg,
+                        rightLeg = state.player.injury.rightLeg,
                         body = state.player.injury.body,
                         head = state.player.injury.head
                     },
@@ -63,10 +63,10 @@ namespace Game.Editor.DebugCLI.Tools
                     },
                     injury = new
                     {
-                        leftArm = state.enemy.injury.leftarm,
-                        rightArm = state.enemy.injury.rightarm,
-                        leftLeg = state.enemy.injury.leftleg,
-                        rightLeg = state.enemy.injury.rightleg,
+                        leftArm = state.enemy.injury.leftArm,
+                        rightArm = state.enemy.injury.rightArm,
+                        leftLeg = state.enemy.injury.leftLeg,
+                        rightLeg = state.enemy.injury.rightLeg,
                         body = state.enemy.injury.body,
                         head = state.enemy.injury.head
                     },

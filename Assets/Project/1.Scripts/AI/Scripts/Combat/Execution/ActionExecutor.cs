@@ -1,6 +1,7 @@
 using Game.Combat.Data;
 using Game.Combat.State;
 using Game.Core.Enums;
+using System.Diagnostics;
 
 namespace Game.Combat.Execution
 {
@@ -35,7 +36,7 @@ namespace Game.Combat.Execution
             }
         }
 
-        // 방향만 다른 가드 공통 처리 — 공격속도/이동속도 조정 시에도 이 헬퍼만 수정
+        // 방향만 다른 가드 공통 처리 — 공격속도/이동속도 조정 시 여기서 조절.
         static bool TryGuard(CombatState state, CombatAction action, AttackDirection direction)
         {
             state.enemy.currentAction    = action;
@@ -50,7 +51,11 @@ namespace Game.Combat.Execution
         static bool TryStartAttack(CombatState state, CombatAction action)
         {
             if (!AttackDatabase.TryGet(action, out var attackData))
+            {
+                Debug.WriteLine("Attack Try Get 실패.");
                 return false;
+            }
+               
 
             state.enemy.currentAction = action;
             state.enemy.currentDirection = attackData.Direction;

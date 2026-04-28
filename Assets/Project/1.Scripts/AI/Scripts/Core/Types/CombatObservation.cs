@@ -33,6 +33,12 @@ namespace Game.Core.Types
         public float EnemyHype;
 
         public int DistanceBucket;
+        // 실거리 (미터). 0 이상.
+        public float DistanceMeters;
+        // attackRange를 넘어선 거리 (미터). 사거리 안이면 0, 밖이면 양수.
+        public float DistanceOverRange;
+        // 캐릭터의 attackRange (미터). 보너스/패널티 정규화용.
+        public float AttackRangeMeters;
         public bool HasFrameAdvantage;
 
         public AttackDirection RecentAttackA;

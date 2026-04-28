@@ -170,7 +170,7 @@ namespace Community.Unity.MCP
         [Serializable]
         public class ExecuteMenuArgs
         {
-            [McpParam("Menu path (e.g., 'Edit/Play')", Required = true)] public string menuPath;
+            [McpParam("Menu path (e.g., 'Edit/PlayMode/Play')", Required = true)] public string menuPath;
         }
 
         [Serializable]

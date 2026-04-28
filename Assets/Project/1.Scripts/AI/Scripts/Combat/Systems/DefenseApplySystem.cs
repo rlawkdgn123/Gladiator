@@ -22,6 +22,8 @@ namespace Game.Combat.Systems
 
                     if (state.player.hp < 0)
                         state.player.hp = 0;
+
+                    InterruptDefender(state.player);
                     break;
                 case DefenseResultType.Guard:
                     ApplyGuardPressure(state, result.AttackDirection, result.Damage);
@@ -35,6 +37,25 @@ namespace Game.Combat.Systems
 
             state.player.isParry = false;
             return result;
+        }
+
+        static void InterruptDefender(FighterState defender)
+        {
+            if (defender == null)
+                return;
+
+            defender.currentAction = CombatAction.None;
+            defender.currentPhase = CombatPhase.Idle;
+            defender.currentDirection = AttackDirection.None;
+            defender.phaseElapsedMs = 0f;
+            defender.actionElapsedMs = 0f;
+            defender.isGuarding = false;
+            defender.isParry = false;
+            defender.isParryWindowOpen = false;
+            defender.isMoving = false;
+
+            // Prevent the defender's own controller from resolving the same attack in the same frame.
+            defender.hasResolvedThisAction = true;
         }
 
         static void ApplyGuardPressure(CombatState state, AttackDirection direction, int damage)

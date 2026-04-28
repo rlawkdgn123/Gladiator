@@ -85,16 +85,16 @@ namespace Game.Editor.DebugCLI.Tools
                 fighter.guardHealth.right = ghRight.Value<float>();
 
             if (p.TryGetValue($"{prefix}_injury_leftarm", out var leftArm))
-                fighter.injury.leftarm = leftArm.Value<bool>();
+                fighter.injury.leftArm = leftArm.Value<bool>();
 
             if (p.TryGetValue($"{prefix}_injury_rightarm", out var rightArm))
-                fighter.injury.rightarm = rightArm.Value<bool>();
+                fighter.injury.rightArm = rightArm.Value<bool>();
 
             if (p.TryGetValue($"{prefix}_injury_leftleg", out var leftLeg))
-                fighter.injury.leftleg = leftLeg.Value<bool>();
+                fighter.injury.leftLeg = leftLeg.Value<bool>();
 
             if (p.TryGetValue($"{prefix}_injury_rightleg", out var rightLeg))
-                fighter.injury.rightleg = rightLeg.Value<bool>();
+                fighter.injury.rightLeg = rightLeg.Value<bool>();
 
             if (p.TryGetValue($"{prefix}_injury_body", out var body))
                 fighter.injury.body = body.Value<bool>();

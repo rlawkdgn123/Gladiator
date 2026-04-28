@@ -40,6 +40,9 @@ namespace Game.Combat.Systems
                 EnemyHype = state.player.hype.current,
 
                 DistanceBucket = state.distanceBucket,
+                DistanceMeters = state.distanceMeters,
+                AttackRangeMeters = state.attackRangeMeters,
+                DistanceOverRange = System.Math.Max(0f, state.distanceMeters - state.attackRangeMeters),
                 HasFrameAdvantage = state.hasFrameAdvantage,
 
                 RecentAttackA = state.recentAttackA,

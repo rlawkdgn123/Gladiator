@@ -4,6 +4,10 @@ namespace Game.Core.Enums
     {
         None,
         Approaching,
+        Advance,
+        Retreat,
+        StrafeLeft,
+        StrafeRight,
         Neutral,
         Pressure,
         Defensive

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Game.Core.Enums;
 using Game.Core.Interfaces;
 using Game.Core.Types;
+using UnityEngine;
 
 namespace Game.AI.Brains
 {
@@ -22,20 +23,7 @@ namespace Game.AI.Brains
         {
             // 리스트 생성 및 각각 행동마다 점수를 계산해서 제일 점수 높은 행동 반환
             var candidates = BuildCandidates(in observation);
-
-            CombatAction bestAction = CombatAction.Wait;
-            float bestScore = float.MinValue;
-
-            foreach (var candidate in candidates)
-            {
-                if (candidate.Score > bestScore)
-                {
-                    bestScore = candidate.Score;
-                    bestAction = candidate.Action;
-                }
-            }
-
-            return bestAction;
+            return SelectBest(candidates);
         }
 
         // 점수표 넘겨줄려고.
@@ -75,14 +63,51 @@ namespace Game.AI.Brains
             };
         }
 
+        static CombatAction SelectBest(List<ActionCandidateScore> candidates)
+        {
+            CombatAction bestAction = CombatAction.Wait;
+            float bestScore = float.MinValue;
+            var tiedActions = new List<CombatAction>();
+
+            foreach (var candidate in candidates)
+            {
+                if (candidate.Score > bestScore + 0.0001f)
+                {
+                    bestScore = candidate.Score;
+                    bestAction = candidate.Action;
+                    tiedActions.Clear();
+                    tiedActions.Add(candidate.Action);
+                    continue;
+                }
+
+                if (Mathf.Abs(candidate.Score - bestScore) <= 0.0001f)
+                    tiedActions.Add(candidate.Action);
+            }
+
+            if (tiedActions.Count == 0)
+                return bestAction;
+
+            return tiedActions[Random.Range(0, tiedActions.Count)];
+        }
+
+        // 사거리 밖에서도 어디까지 공격을 시도할 수 있게 둘지 (m). 이 거리를 넘으면 -10 컷.
+        // attackRange + lungeReach 까지가 공격 가능 영역, 그 안에서는 거리에 비례한 페널티.
+        const float LungeReachMeters = 0.6f;
+
         float ScoreHeavyAttack(AttackDirection direction, float enemyGuardHealth, in CombatObservation observation)
         {
-            // 공격 사거리 밖이면 공격 불가 (DistanceBucket 0 = 사거리 이내, 1 = 사거리 밖)
-            if (observation.DistanceBucket != 0)
+            // 사거리에서 LungeReach 이상 멀면 공격 자체 불가
+            float distOver = observation.DistanceOverRange;
+            if (distOver > LungeReachMeters)
                 return -10f;
 
             // 기본 점수
             float score = 1.0f;
+
+            // 사거리 안(distOver==0)이면 페널티 0, 밖이면 거리 비례 선형 감점.
+            // LungeReach 끝(=경계)에서 -1.5 페널티. Aggressive 보정(+2.5)이면 여전히 양수 가능.
+            float distancePenalty = -1.5f * (distOver / LungeReachMeters);
+            score += distancePenalty;
 
             // 상대 GH가 약하면 그 방향 더 노리기.
             score += GetWeakGuardBonus(enemyGuardHealth);
@@ -258,12 +283,17 @@ namespace Game.AI.Brains
             };
         }
 
+        // 성향별 공격 가중치. 거리 페널티(-1.5)를 이길 수 있을 만큼 충분히 강하게.
+        // Aggressive: +2.5 → LungeReach 경계에서도 양수 점수 유지 가능.
+        // Default:    +0.6 → 사거리 안에선 적극적, 약간 멀면 망설임.
+        // Defensive:  -1.0 → 사거리 안에서도 가드/대기 우선.
         float GetPersonalityAttackBias()
         {
             return personality switch
             {
-                AIPersonalityType.Aggressive => 1.0f,
-                AIPersonalityType.Defensive => -0.5f,
+                AIPersonalityType.Aggressive => 2.5f,
+                AIPersonalityType.Defensive => -1.0f,
+                AIPersonalityType.Default => 0.6f,
                 _ => 0f
             };
         }
@@ -272,8 +302,9 @@ namespace Game.AI.Brains
         {
             return personality switch
             {
-                AIPersonalityType.Aggressive => -0.2f,
-                AIPersonalityType.Defensive => 0.8f,
+                AIPersonalityType.Aggressive => -0.5f,
+                AIPersonalityType.Defensive => 1.0f,
+                AIPersonalityType.Default => 0.1f,
                 _ => 0f
             };
         }
@@ -282,8 +313,9 @@ namespace Game.AI.Brains
         {
             return personality switch
             {
-                AIPersonalityType.Aggressive => -0.15f,
-                AIPersonalityType.Defensive => 0.3f,
+                AIPersonalityType.Aggressive => -0.45f,
+                AIPersonalityType.Defensive => 0.4f,
+                AIPersonalityType.Default => -0.05f,
                 _ => 0f
             };
         }

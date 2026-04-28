@@ -4,6 +4,7 @@ using Game.AI.BehaviorTree.Nodes;
 using Game.Core.Enums;
 using Game.Core.Interfaces;
 using Game.Core.Types;
+using UnityEngine;
 
 // 1. BT로 전술 모드 결정
 // 2.그 모드에 맞는 UtilityBrain으로 세부 행동 선택
@@ -135,17 +136,27 @@ namespace Game.AI.Brains
         {
             CombatAction best = CombatAction.Wait;
             float bestScore = float.MinValue;
+            var tiedActions = new List<CombatAction>();
 
             foreach (var c in candidates)
             {
-                if (c.Score > bestScore)
+                if (c.Score > bestScore + 0.0001f)
                 {
                     bestScore = c.Score;
                     best = c.Action;
+                    tiedActions.Clear();
+                    tiedActions.Add(c.Action);
+                    continue;
                 }
+
+                if (Mathf.Abs(c.Score - bestScore) <= 0.0001f)
+                    tiedActions.Add(c.Action);
             }
 
-            return best;
+            if (tiedActions.Count == 0)
+                return best;
+
+            return tiedActions[Random.Range(0, tiedActions.Count)];
         }
 
         BTNode BuildTree()

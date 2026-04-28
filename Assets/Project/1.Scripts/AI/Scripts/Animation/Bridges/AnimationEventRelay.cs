@@ -34,10 +34,6 @@ namespace Game.Animation.Bridges
             controller.State.enemy.phaseElapsedMs = 0f;
         }
 
-        public void OnAttackActiveEnd()
-        {
-        }
-
         public void OnAttackRecoveryStart()
         {
             if (!IsReady())
