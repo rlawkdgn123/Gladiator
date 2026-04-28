@@ -122,7 +122,7 @@ public class PlayerCameraScript : MonoBehaviour
         if (Components.CamPositionRight != null)
             transform.position = Components.CamPositionRight.position;
 
-        Vector2 lookInput = m_inputHandler.Values.LookVector;
+        Vector2 lookInput = m_inputHandler.GetLookVector();
 
         CheckOptions.LeftRightLookAngle += lookInput.x * CheckOptions.HorizontalSensitivity * Time.deltaTime;
         CheckOptions.UpDownLookAngle -= lookInput.y * CheckOptions.VerticalSensitivity * Time.deltaTime;
