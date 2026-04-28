@@ -40,8 +40,8 @@ public class PlayerInputHandler : MonoBehaviour
     [SerializeField] private InputHandle.InputValues m_inputValues = new();
     [SerializeField] private InputHandle.InputActions m_inputActions = new();
 
-    public InputValues Values => m_inputValues;
-    public InputActions Actions => m_inputActions;
+    private InputValues Values => m_inputValues;
+    private InputActions Actions => m_inputActions;
 
     private void Awake()
     {
@@ -61,7 +61,7 @@ public class PlayerInputHandler : MonoBehaviour
             Actions.ParryAction = m_playerInput.actions["Parry"];
 
         if (m_playerInput != null)
-            Actions.ParryAction = m_playerInput.actions["ChangeTarget"];
+            Actions.WhillAction = m_playerInput.actions["ChangeTarget"];
     }
 
     private void OnMove(InputValue value)
@@ -91,7 +91,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void OnAttack(InputValue value)
     {
-        Debug.Log("OnAttack");
+        //Debug.Log("OnAttack");
     }
 
     private void OnParry(InputValue value)
@@ -102,7 +102,57 @@ public class PlayerInputHandler : MonoBehaviour
     private void OnChangeTarget(InputValue value)
     {
         Values.ScrollY = value.Get<float>();
-        Debug.Log("OnChangeTarget");
-        Debug.Log(Values.ScrollY);
+        //Debug.Log("OnChangeTarget");
+        //Debug.Log(Values.ScrollY);
+    }
+
+    public Vector2 GetMoveVector()
+    {
+        return Values.MoveVector;
+    }
+
+    public Vector2 GetLookVector()
+    {
+        return Values.LookVector;
+    }
+
+    public float GetScrollY()
+    {
+        return Values.ScrollY;
+    }
+
+    public void SetScrollY(float scrollY)
+    {
+        Values.ScrollY = scrollY;
+    }
+
+    public bool GetSprintActionIsPressed()
+    {
+        return Actions.SprintAction != null
+            && Actions.SprintAction.IsPressed();
+    }
+
+    public bool GetFocusActionWasPressedThisFrame()
+    {
+        return Actions.FocusAction != null
+            && Actions.FocusAction.WasPressedThisFrame();
+    }
+
+    public bool GetAttackActionWasPressedThisFrame()
+    {
+        return Actions.AttackAction != null
+            && Actions.AttackAction.WasPressedThisFrame();
+    }
+
+    public bool GetParryActionWasPressedThisFrame()
+    {
+        return Actions.ParryAction != null
+            && Actions.ParryAction.WasPressedThisFrame();
+    }
+
+    public bool GetWhillActionWasPressedThisFrame()
+    {
+        return Actions.WhillAction != null
+            && Actions.WhillAction.WasPressedThisFrame();
     }
 }
