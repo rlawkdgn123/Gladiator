@@ -177,6 +177,15 @@
         "com.unity.render-pipelines.core": "17.0.3"
       }
     },
+    "com.youngwoocho02.unity-cli-connector": {
+      "version": "https://github.com/INT-smashed/unity-cli-expand.git?path=unity-connector",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+      },
+      "hash": "433e0dff486e0dfc267a997117e1625f7117383c"
+    },
     "com.unity.searcher": {
       "version": "4.9.4",
       "depth": 2,
