@@ -4,8 +4,8 @@ Shader "Custom/Terrain/Hex"
     {
         // Hex tiling controls
         _HexScale("Hex Scale (cells per UV unit)", Range(0.05, 4.0)) = 0.5
-        _HexRotationStrength("Hex Rotation Strength", Range(0.0, 1.0)) = 0.7
-        _HexContrast("Hex Contrast (cell sharpness)", Range(1.0, 12.0)) = 4.0
+        _HexRotationStrength("Hex Rotation Strength", Range(0.0, 1.0)) = 0.0
+        _HexContrast("Hex Contrast (cell sharpness)", Range(1.0, 12.0)) = 1.0
 
         [HideInInspector] [ToggleUI] _EnableHeightBlend("EnableHeightBlend", Float) = 0.0
         _HeightTransition("Height Transition", Range(0, 1.0)) = 0.0

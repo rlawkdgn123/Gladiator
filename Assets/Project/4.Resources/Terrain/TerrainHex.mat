@@ -11,7 +11,8 @@ Material:
   m_Shader: {fileID: 4800000, guid: a2b0d07e045b9194b858aac97efdc697, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _TERRAIN_BLEND_HEIGHT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -85,11 +86,11 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _EnableHeightBlend: 0
+    - _EnableHeightBlend: 1
     - _EnableInstancedPerPixelNormal: 1
-    - _HeightTransition: 0
-    - _HexContrast: 4
-    - _HexRotationStrength: 0.7
+    - _HeightTransition: 0.35
+    - _HexContrast: 1.2
+    - _HexRotationStrength: 0.25
     - _HexScale: 0.5
     - _Metallic0: 0
     - _Metallic1: 0
