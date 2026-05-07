@@ -1,0 +1,153 @@
+Ver 2.7
+Modified Motions
+Fixed an issue where the repetitive movement animations were not connecting smoothly.
+The modified animations are as follows:
+
+Base Move 
+Walk Base A,B,Other_Walk_F,Walk Slow,
+AS_Stand_Idle_Turn_A,B_L90,R90,
+Sprint Base A,B,
+Run Base A,B,Other_Run_F,
+Crouch Base
+
+Bow
+Attack_Idle_Turn_L90, Attack Walk Base,
+Crouch Base A,B,
+Idle_Turn_A,B_L90,R90,
+Run Base,
+Sprint Base A,B,
+Walk Base, Walk Slow,
+
+One Hand Base
+Crouch Base,
+Idle_Turn_A,B_L90,R90,
+Run Base A,B,
+Shield Run A,B,
+Shield Walk A,B,
+Shield Walk Slow A,B,
+Sprint Base A,B,
+Walk Base A,B, Walk Slow A,B,
+
+One Hand Up
+Crouch Base,
+Idle_Turn_A,B_L90,R90,
+Run Base A,B,
+Shield Run A,B,
+Shield Walk A,B,
+Shield Walk Slow A,B
+Sprint Base A,B,
+Walk Base A,B, Walk Slow A,B,
+
+------------------------------------------------------------
+Ver 2.6
+
+Modified Motions
+
+One Hand Up
+The entire animation has been revised.
+The rotation part of Unreal Root Bone has been removed and modified to default.
+OneHand -> 1Hand, TwoHand -> 2Hand name change
+
+Added Motions
+
+Base Move
+Jump - 30
+
+One Hand Up
+Crouch - Base 8, Change 8, Start 8, Stop 8, Transition 2,
+Idle - Idle_Turn 18,
+Run - Change(A - 8, B - 8)
+Walk - Change(A - 8, B - 8)
+Buff Weapon 1
+Jump 4,
+Shield - Idle 1
+
+Added Weapon Bone Example scene
+------------------------------------------------------------
+Ver 2.5
+
+Modified Motions
+Base Move
+AS_Run_B_B_L45_To_Idle, AS_Run_B_B_R45_To_Idle
+AS_Run_A_B_L45_To_Idle, AS_Run_A_B_R45_To_Idle
+
+One Hand Base
+The entire animation has been revised.
+The rotation part of Unreal Root Bone has been removed and modified to default.
+OneHand -> 1Hand, TwoHand -> 2Hand name change
+
+Added Motions
+Idle - Idle_Turn 18,
+Crouch - Base 8, Change 8, Start 8, Stop 8, Transition 2,
+Run - Change(A - 8, B - 8)
+Walk - Change(A - 8, B - 8)
+Jump 4,
+
+Added Weapon Bone Example scene
+------------------------------------------------------------
+Ver 2.4
+
+Modified Motions
+
+Base Move
+Crouch - LR90_Shuffle 
+AS_Crouch_F_L90_A_To_B, AS_Crouch_F_R90_A_To_B, 
+Run - Change - B 
+AS_Run_B_F_L90_A_To_F_R90_A, AS_Run_B_F_R90_A_To_F_L90_A
+
+Bow
+The entire animation has been revised.
+The rotation part of Unreal Root Bone has been removed and modified to default.
+OneHand -> 1Hand name change
+
+Added Motions
+
+Bow
+Attack C 1,
+Jump 4,
+Crouch - Idle 1, Idle_Turn_B 14, Base 36, Change 36, LR90_Shuffle 8, Start 36, Stop 36, Transition 6, Turn 10,
+Run - Change 8, 
+Walk - Change 8,
+Idle - Idle 2, Idle_Turn 18,
+Skill 6,
+
+Added Weapon Bone Example scene
+
+------------------------------------------------------------
+
+Ver 2.3
+
+Modified Motions
+Base Move
+The entire animation has been revised.
+The rotation part of Unreal Root Bone has been removed and modified to default.
+
+Added Motions
+Base Move 352
+Crouch 34 - Base 8, Change 8, Start 8, Stop 8, Transition 2
+Stand_Idle - Idle_Turn 18
+Run 140 - Base 20, Change 36, LR90_Shuffle 8, Start 28, Stop 20, Turn 14, Other_Run_F 14
+Sprint 34 - Base 6, Start 12, Stop 6, Turn 10
+Walk 126 - Base 20, Change 36, LR90_Shuffle 8, Start 28, Stop 20, Turn 10, Other_Walk_F 4
+
+The existing movement is type A, and the added type B is made to suit holding a weapon or in combat situations.
+
+------------------------------------------------------------
+
+Ver 2.2
+
+Added Motions
+Easy FBX Anim Modifier 1.2 - Weapon Bone Retargeter
+To retarget the Weapon Bone, you can use the features included in the Easy FBX Anim Modifier asset. 
+However, if you want to retarget precise motion, we recommend using related software or assets.
+
+ActionDeadPose-1.4 - Door Gate 4,Item 7,StartPointBehavior 2
+TwoHandBase-1.5 - Skill 16
+
+Modified Motions
+Actions, Dead Pose,  Two Hand Base (Skills) - The entire animation has been revised. The rotation part of Unreal Root Bone has been removed and modified to default.
+
+
+I plan to add weapon bones to all animations.
+Additionally, the rotation part of the Unreal root bone will be removed and changed to default.
+Since I can't update them all at once, I'll do it in stages.

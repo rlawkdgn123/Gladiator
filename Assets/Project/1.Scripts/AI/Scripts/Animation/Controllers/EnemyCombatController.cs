@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Game.AI.Brains;
 using Game.Combat.AI;
 using Game.Combat.State;
@@ -462,7 +462,7 @@ namespace Game.Combat.Execution
         }
 
         // 회전 속도 (deg/sec). 너무 크면 휙 돌고, 너무 작으면 반응이 늦음.
-        [SerializeField] float turnSpeedDeg = 720f;
+        [SerializeField] float turnSpeedDeg = 360f;
 
         void MoveTowardPlayer()
         {
