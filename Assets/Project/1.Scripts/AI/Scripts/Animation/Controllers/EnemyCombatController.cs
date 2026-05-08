@@ -31,6 +31,10 @@ namespace Game.Combat.Execution
         [Header("Parry Learning")]
         [SerializeField] AIParryLearner parryLearner = new AIParryLearner();
 
+        [Header("Parry Timing")]
+        [SerializeField] float parryWindowDuration = 0.15f;
+        [SerializeField] float parryRecoveryDuration = 0.35f;
+
         [Header("Movement")]
         [SerializeField] Transform playerTransform;
         [SerializeField] float attackRange = 1.8f;
@@ -325,6 +329,8 @@ namespace Game.Combat.Execution
                     ActionPhaseDriver.Tick(combatState.enemy, Time.deltaTime);
                 else if (combatState.enemy.currentAction != CombatAction.None)
                     combatState.enemy.actionElapsedMs += Time.deltaTime * 1000f;
+
+                TickParryWindow();
             }
 
             // ── Slash VFX phase 동기화 ────────────────────────
@@ -507,6 +513,10 @@ namespace Game.Combat.Execution
                 GuardWalkDirection.Back => -forward,
                 GuardWalkDirection.Left => Vector3.Cross(forward, Vector3.up).normalized,
                 GuardWalkDirection.Right => Vector3.Cross(Vector3.up, forward).normalized,
+                GuardWalkDirection.FrontLeft => (forward + Vector3.Cross(forward, Vector3.up).normalized).normalized,
+                GuardWalkDirection.FrontRight => (forward + Vector3.Cross(Vector3.up, forward).normalized).normalized,
+                GuardWalkDirection.BackLeft => (-forward + Vector3.Cross(forward, Vector3.up).normalized).normalized,
+                GuardWalkDirection.BackRight => (-forward + Vector3.Cross(Vector3.up, forward).normalized).normalized,
                 _ => Vector3.zero
             };
 
@@ -517,12 +527,16 @@ namespace Game.Combat.Execution
                 GuardWalkDirection.Back => 0.9f,
                 GuardWalkDirection.Left => 0.85f,
                 GuardWalkDirection.Right => 0.85f,
+                GuardWalkDirection.FrontLeft => 0.9f,
+                GuardWalkDirection.FrontRight => 0.9f,
+                GuardWalkDirection.BackLeft => 0.8f,
+                GuardWalkDirection.BackRight => 0.8f,
                 _ => 1f
             };
 
             float speed = moveSpeed * guardWalkSpeedMultiplier * speedScale;
             float step = speed * Time.deltaTime;
-            if (direction == GuardWalkDirection.Front)
+            if (IsForwardGuardWalk(direction))
             {
                 float stopDistance = attackRange + stopDistanceBuffer;
                 if (toPlayer.magnitude <= stopDistance)
@@ -536,6 +550,13 @@ namespace Game.Combat.Execution
 
             rb.MovePosition(rb.position + moveDir * step);
             FaceTowardPlayer();
+        }
+
+        static bool IsForwardGuardWalk(GuardWalkDirection direction)
+        {
+            return direction == GuardWalkDirection.Front
+                || direction == GuardWalkDirection.FrontLeft
+                || direction == GuardWalkDirection.FrontRight;
         }
 
         void FaceTowardPlayer()
@@ -600,10 +621,10 @@ namespace Game.Combat.Execution
             {
                 float closeRoll = Random.value;
                 if (closeRoll < retreatChance)
-                    return GuardWalkDirection.Back;
+                    return RandomBackDirection();
 
                 if (closeRoll < retreatChance + strafeChance)
-                    return Random.value < 0.5f ? GuardWalkDirection.Left : GuardWalkDirection.Right;
+                    return RandomSideDirection(includeForward: false, includeBack: true);
 
                 return GuardWalkDirection.None;
             }
@@ -612,22 +633,50 @@ namespace Game.Combat.Execution
             {
                 float midRoll = Random.value;
                 if (midRoll < strafeChance)
-                    return Random.value < 0.5f ? GuardWalkDirection.Left : GuardWalkDirection.Right;
+                    return RandomSideDirection(includeForward: true, includeBack: false);
 
                 if (combatState.personality == AIPersonalityType.Defensive &&
                     midRoll < strafeChance + (retreatChance * 0.5f))
-                    return GuardWalkDirection.Back;
+                    return RandomBackDirection();
 
                 if (dist > attackRange + 0.2f && Random.value < lastMoveProbability * 0.35f)
-                    return GuardWalkDirection.Front;
+                    return RandomForwardDirection();
 
                 return GuardWalkDirection.None;
             }
 
             if (dist > attackRange + 0.3f && Random.value < 0.35f)
-                return Random.value < 0.5f ? GuardWalkDirection.Left : GuardWalkDirection.Right;
+                return RandomSideDirection(includeForward: true, includeBack: false);
 
-            return dist > attackRange ? GuardWalkDirection.Front : GuardWalkDirection.None;
+            return dist > attackRange ? RandomForwardDirection() : GuardWalkDirection.None;
+        }
+
+        static GuardWalkDirection RandomForwardDirection()
+        {
+            float roll = Random.value;
+            if (roll < 0.2f) return GuardWalkDirection.FrontLeft;
+            if (roll < 0.4f) return GuardWalkDirection.FrontRight;
+            return GuardWalkDirection.Front;
+        }
+
+        static GuardWalkDirection RandomBackDirection()
+        {
+            float roll = Random.value;
+            if (roll < 0.25f) return GuardWalkDirection.BackLeft;
+            if (roll < 0.5f) return GuardWalkDirection.BackRight;
+            return GuardWalkDirection.Back;
+        }
+
+        static GuardWalkDirection RandomSideDirection(bool includeForward, bool includeBack)
+        {
+            bool left = Random.value < 0.5f;
+            if (includeForward && Random.value < 0.35f)
+                return left ? GuardWalkDirection.FrontLeft : GuardWalkDirection.FrontRight;
+
+            if (includeBack && Random.value < 0.35f)
+                return left ? GuardWalkDirection.BackLeft : GuardWalkDirection.BackRight;
+
+            return left ? GuardWalkDirection.Left : GuardWalkDirection.Right;
         }
 
         float ComputeGuardWalkIntentProbability(float dist)
@@ -707,7 +756,11 @@ namespace Game.Combat.Execution
             return direction switch
             {
                 GuardWalkDirection.Front => AITacticalMode.Advance,
+                GuardWalkDirection.FrontLeft => AITacticalMode.Advance,
+                GuardWalkDirection.FrontRight => AITacticalMode.Advance,
                 GuardWalkDirection.Back => AITacticalMode.Retreat,
+                GuardWalkDirection.BackLeft => AITacticalMode.Retreat,
+                GuardWalkDirection.BackRight => AITacticalMode.Retreat,
                 GuardWalkDirection.Left => AITacticalMode.StrafeLeft,
                 GuardWalkDirection.Right => AITacticalMode.StrafeRight,
                 _ => AITacticalMode.None
@@ -836,7 +889,7 @@ namespace Game.Combat.Execution
                 return;
             }
 
-            if (IsAttackAction(action))
+            if (IsAttackAction(action) || IsParryAction(action))
             {
                 currentGuardWalkDirection = GuardWalkDirection.None;
                 consecutiveGuardWalkDecisions = 0;
@@ -860,6 +913,35 @@ namespace Game.Combat.Execution
             return action == CombatAction.AttackTopHeavy
                 || action == CombatAction.AttackLeftHeavy
                 || action == CombatAction.AttackRightHeavy;
+        }
+
+        static bool IsParryAction(CombatAction action)
+        {
+            return action == CombatAction.ParryTop
+                || action == CombatAction.ParryLeft
+                || action == CombatAction.ParryRight;
+        }
+
+        void TickParryWindow()
+        {
+            var fighter = combatState.enemy;
+            if (fighter == null || !IsParryAction(fighter.currentAction))
+                return;
+
+            float windowMs = Mathf.Max(0.01f, parryWindowDuration) * 1000f;
+            float recoveryMs = Mathf.Max(parryRecoveryDuration, parryWindowDuration) * 1000f;
+
+            if (fighter.isParryWindowOpen && fighter.actionElapsedMs >= windowMs)
+                fighter.isParryWindowOpen = false;
+
+            if (fighter.isParry && fighter.actionElapsedMs >= recoveryMs)
+            {
+                fighter.isParry = false;
+                fighter.currentAction = GuardActionFromDirection(fighter.currentDirection);
+                fighter.currentPhase = CombatPhase.Idle;
+                fighter.phaseElapsedMs = 0f;
+                fighter.actionElapsedMs = 0f;
+            }
         }
 
         void ApplyAnimatorDecision(CombatAction action)

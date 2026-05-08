@@ -59,6 +59,9 @@ namespace Game.AI.Brains
                 new ActionCandidateScore(CombatAction.GuardTop, ScoreGuard(AttackDirection.Top, observation)),
                 new ActionCandidateScore(CombatAction.GuardLeft, ScoreGuard(AttackDirection.Left, observation)),
                 new ActionCandidateScore(CombatAction.GuardRight, ScoreGuard(AttackDirection.Right, observation)),
+                new ActionCandidateScore(CombatAction.ParryTop, ScoreParry(AttackDirection.Top, observation)),
+                new ActionCandidateScore(CombatAction.ParryLeft, ScoreParry(AttackDirection.Left, observation)),
+                new ActionCandidateScore(CombatAction.ParryRight, ScoreParry(AttackDirection.Right, observation)),
                 new ActionCandidateScore(CombatAction.Wait, ScoreWait(observation))
             };
         }
@@ -153,6 +156,41 @@ namespace Game.AI.Brains
             // 성향에 따른 가드 보정
             score += GetPersonalityGuardBias();
             return score;
+        }
+
+        float ScoreParry(AttackDirection direction, in CombatObservation observation)
+        {
+            if (observation.EnemyCurrentDirection == AttackDirection.None)
+                return -2f;
+
+            float score = direction == observation.EnemyCurrentDirection ? 1.3f : -1.2f;
+
+            float parryRate = direction switch
+            {
+                AttackDirection.Top   => observation.MyParryRateTop,
+                AttackDirection.Left  => observation.MyParryRateLeft,
+                AttackDirection.Right => observation.MyParryRateRight,
+                _                     => 0f
+            };
+
+            score += parryRate * GetDifficultyParryMultiplier();
+
+            if (observation.EnemyIsGuarding)
+                score -= 0.4f;
+
+            score += GetPersonalityParryBias();
+            return score;
+        }
+
+        float GetDifficultyParryMultiplier()
+        {
+            return difficulty switch
+            {
+                AIDifficultyType.Easy => 0.45f,
+                AIDifficultyType.Normal => 1.0f,
+                AIDifficultyType.Hard => 1.45f,
+                _ => 0f
+            };
         }
 
         float ScoreWait(in CombatObservation observation)
@@ -305,6 +343,17 @@ namespace Game.AI.Brains
                 AIPersonalityType.Aggressive => -0.5f,
                 AIPersonalityType.Defensive => 1.0f,
                 AIPersonalityType.Default => 0.1f,
+                _ => 0f
+            };
+        }
+
+        float GetPersonalityParryBias()
+        {
+            return personality switch
+            {
+                AIPersonalityType.Aggressive => 0.35f,
+                AIPersonalityType.Defensive => 0.75f,
+                AIPersonalityType.Default => 0.2f,
                 _ => 0f
             };
         }

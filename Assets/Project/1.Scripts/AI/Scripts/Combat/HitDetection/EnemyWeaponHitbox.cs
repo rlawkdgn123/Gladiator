@@ -1,5 +1,4 @@
 using Game.Combat.Execution;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Game.Combat.HitDetection
@@ -10,8 +9,12 @@ namespace Game.Combat.HitDetection
     {
         [SerializeField] EnemyCombatController owner;
         [SerializeField] bool setColliderAsTriggerOnReset = true;
+        [SerializeField] LayerMask hitLayers = ~0;
+        [SerializeField] QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Collide;
+        [SerializeField] int maxOverlapResults = 16;
 
         Collider hitboxCollider;
+        Collider[] overlapResults;
 
         void Reset()
         {
@@ -28,10 +31,104 @@ namespace Game.Combat.HitDetection
                 owner = GetComponentInParent<EnemyCombatController>();
 
             hitboxCollider = GetComponent<Collider>();
+            overlapResults = new Collider[Mathf.Max(1, maxOverlapResults)];
         }
 
-        void OnTriggerEnter(Collider other) => TryResolve(other);
-        void OnTriggerStay(Collider other) => TryResolve(other);
+        void OnValidate()
+        {
+            maxOverlapResults = Mathf.Max(1, maxOverlapResults);
+        }
+
+        void Update()
+        {
+            if (owner == null || !owner.CanDealWeaponHit())
+                return;
+
+            if (hitboxCollider == null)
+                return;
+
+            EnsureOverlapBuffer();
+
+            int count = OverlapHitbox();
+            for (int i = 0; i < count; i++)
+            {
+                if (!owner.CanDealWeaponHit())
+                    break;
+
+                TryResolve(overlapResults[i]);
+            }
+        }
+
+        void EnsureOverlapBuffer()
+        {
+            if (overlapResults == null || overlapResults.Length != maxOverlapResults)
+                overlapResults = new Collider[Mathf.Max(1, maxOverlapResults)];
+        }
+
+        int OverlapHitbox()
+        {
+            if (hitboxCollider is BoxCollider box)
+            {
+                Vector3 center = box.transform.TransformPoint(box.center);
+                Vector3 halfExtents = Vector3.Scale(box.size * 0.5f, box.transform.lossyScale);
+                return Physics.OverlapBoxNonAlloc(center, halfExtents, overlapResults, box.transform.rotation, hitLayers, triggerInteraction);
+            }
+
+            if (hitboxCollider is SphereCollider sphere)
+            {
+                Vector3 center = sphere.transform.TransformPoint(sphere.center);
+                float radius = sphere.radius * MaxAbsAxis(sphere.transform.lossyScale);
+                return Physics.OverlapSphereNonAlloc(center, radius, overlapResults, hitLayers, triggerInteraction);
+            }
+
+            if (hitboxCollider is CapsuleCollider capsule)
+            {
+                GetCapsuleWorldPoints(capsule, out var pointA, out var pointB, out float radius);
+                return Physics.OverlapCapsuleNonAlloc(pointA, pointB, radius, overlapResults, hitLayers, triggerInteraction);
+            }
+
+            Bounds bounds = hitboxCollider.bounds;
+            return Physics.OverlapBoxNonAlloc(bounds.center, bounds.extents, overlapResults, Quaternion.identity, hitLayers, triggerInteraction);
+        }
+
+        static float MaxAbsAxis(Vector3 scale)
+        {
+            return Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+        }
+
+        static void GetCapsuleWorldPoints(CapsuleCollider capsule, out Vector3 pointA, out Vector3 pointB, out float radius)
+        {
+            Transform t = capsule.transform;
+            Vector3 center = t.TransformPoint(capsule.center);
+            Vector3 scale = t.lossyScale;
+
+            Vector3 axis;
+            float heightScale;
+            float radiusScale;
+            switch (capsule.direction)
+            {
+                case 0:
+                    axis = t.right;
+                    heightScale = Mathf.Abs(scale.x);
+                    radiusScale = Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+                    break;
+                case 2:
+                    axis = t.forward;
+                    heightScale = Mathf.Abs(scale.z);
+                    radiusScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+                    break;
+                default:
+                    axis = t.up;
+                    heightScale = Mathf.Abs(scale.y);
+                    radiusScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                    break;
+            }
+
+            radius = capsule.radius * radiusScale;
+            float halfHeight = Mathf.Max((capsule.height * heightScale * 0.5f) - radius, 0f);
+            pointA = center + axis * halfHeight;
+            pointB = center - axis * halfHeight;
+        }
 
         void TryResolve(Collider other)
         {

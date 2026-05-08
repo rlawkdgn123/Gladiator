@@ -30,17 +30,18 @@ namespace Game.Combat.Systems
             }
 
             bool directionMatched = defender.currentDirection == attackData.Direction;
-            bool inParryWindow = attacker.isParryWindowOpen ||
-                      (attacker.actionElapsedMs >= attackData.ParryWindowStartMs &&
-                       attacker.actionElapsedMs <= attackData.ParryWindowEndMs);
+            bool attackIsParryable =
+                attacker.actionElapsedMs >= attackData.ParryWindowStartMs &&
+                attacker.actionElapsedMs <= attackData.ParryWindowEndMs;
+            bool defenderParryWindow = defender.isParryWindowOpen || defender.isParry;
 
             result.AttackAction = attacker.currentAction;
             result.AttackDirection = attackData.Direction;
             result.DirectionMatched = directionMatched;
-            result.WasParryWindow = inParryWindow;
+            result.WasParryWindow = attackIsParryable && defenderParryWindow;
             result.Damage = attackData.Damage;
 
-            if (defender.isParry && directionMatched && inParryWindow)
+            if (defender.isParry && directionMatched && attackIsParryable && defenderParryWindow)
             {
                 result.ResultType = DefenseResultType.Parry;
                 result.Damage = 0;
