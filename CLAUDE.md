@@ -43,7 +43,7 @@ Packages/
 ```
 
 ## Git 규칙 (필수)
-- **작업 브랜치: `Project/GS` 전용** — 여기서만 commit/push
+- **작업 브랜치: 플밍별 본인 브랜치 사용 (예: `codex/GS`, `Project/GS`)** — 각자 본인 브랜치에서만 commit/push
 - `develop`, `master`에 직접 commit/push **절대 금지** — PR만
 - 플밍 2명만 commit 권한 (GyeongSeok / 팀원)
 - 아트·기획은 pull 전용
