@@ -23,6 +23,7 @@ namespace Game.Combat.Systems
                     fighter.phaseElapsedMs = 0f;
                     fighter.actionElapsedMs = 0f;
                     fighter.isParry = false;
+                    fighter.isParryWindowOpen = false;
                     fighter.hasResolvedThisAction = false;
                 }
                 return;
@@ -64,6 +65,7 @@ namespace Game.Combat.Systems
                         fighter.phaseElapsedMs = 0f;
                         fighter.actionElapsedMs = 0f;
                         fighter.isParry = false;
+                        fighter.isParryWindowOpen = false;
                         fighter.hasResolvedThisAction = false;
                     }
                     break;

@@ -10,6 +10,9 @@ namespace Game.Core.Enums
         GuardTop,
         GuardLeft,
         GuardRight,
+        ParryTop,
+        ParryLeft,
+        ParryRight,
         Wait
     }
 }

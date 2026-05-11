@@ -81,6 +81,9 @@ namespace Game.Editor.DebugCLI.Tools
                 "guardtop" => CombatAction.GuardTop,
                 "guardleft" => CombatAction.GuardLeft,
                 "guardright" => CombatAction.GuardRight,
+                "parrytop" => CombatAction.ParryTop,
+                "parryleft" => CombatAction.ParryLeft,
+                "parryright" => CombatAction.ParryRight,
 
                 "wait" => CombatAction.Wait,
 

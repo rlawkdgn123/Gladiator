@@ -6,6 +6,10 @@ namespace Game.Core.Enums
         Front = 1,
         Left = 2,
         Right = 3,
-        Back = 4
+        Back = 4,
+        FrontLeft = 5,
+        FrontRight = 6,
+        BackLeft = 7,
+        BackRight = 8
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -56,6 +57,112 @@ namespace Community.Unity.MCP
                 totalCount = guids.Length,
                 returnedCount = assets.Count,
                 assets = assets.ToArray()
+            };
+        }
+
+        private static readonly HashSet<string> ReadableExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".cs", ".shader", ".hlsl", ".cginc", ".compute",
+            ".json", ".txt", ".xml", ".asmdef", ".asmref",
+            ".uss", ".uxml", ".md", ".yaml", ".yml"
+        };
+
+        private const int DefaultMaxBytes = 200 * 1024;
+        private const int HardMaxBytes = 2 * 1024 * 1024;
+
+        [McpTool("unity_read_script", "Read the full contents of a text/script asset (whitelisted extensions only). Supports optional line range.", typeof(ReadScriptArgs))]
+        public static object ReadScript(string argsJson)
+        {
+            var args = JsonUtility.FromJson<ReadScriptArgs>(argsJson);
+            if (args == null || string.IsNullOrEmpty(args.path))
+            {
+                return new { error = "path parameter is required (e.g., 'Assets/Project/1.Scripts/Foo.cs')" };
+            }
+
+            string normalized = args.path.Replace('\\', '/').TrimStart('/');
+            if (!normalized.StartsWith("Assets/") && !normalized.StartsWith("Packages/")
+                && normalized != "Assets" && normalized != "Packages")
+            {
+                return new { error = "path must be inside Assets/ or Packages/" };
+            }
+
+            string ext = Path.GetExtension(normalized);
+            if (string.IsNullOrEmpty(ext) || !ReadableExtensions.Contains(ext))
+            {
+                return new { error = $"extension '{ext}' is not in the readable whitelist" };
+            }
+
+            string projectRoot = Path.GetDirectoryName(Application.dataPath) ?? string.Empty;
+            string fullPath = Path.GetFullPath(Path.Combine(projectRoot, normalized));
+            string projectRootFull = Path.GetFullPath(projectRoot);
+            if (!fullPath.StartsWith(projectRootFull, StringComparison.OrdinalIgnoreCase))
+            {
+                return new { error = "resolved path escapes the project root" };
+            }
+
+            if (!File.Exists(fullPath))
+            {
+                return new { error = $"file not found: {normalized}" };
+            }
+
+            int maxBytes = args.maxBytes > 0 ? Math.Min(args.maxBytes, HardMaxBytes) : DefaultMaxBytes;
+
+            string fileContent;
+            try
+            {
+                fileContent = File.ReadAllText(fullPath);
+            }
+            catch (Exception ex)
+            {
+                return new { error = $"failed to read file: {ex.Message}" };
+            }
+
+            string[] allLines = fileContent.Split('\n');
+            int totalLines = allLines.Length;
+
+            int startLine = args.startLine > 0 ? args.startLine : 1;
+            int endLine = args.endLine > 0 ? args.endLine : totalLines;
+            if (startLine > totalLines) startLine = totalLines;
+            if (endLine > totalLines) endLine = totalLines;
+            if (endLine < startLine) endLine = startLine;
+
+            string content;
+            bool rangeApplied = (args.startLine > 0 || args.endLine > 0);
+            if (rangeApplied)
+            {
+                var sb = new StringBuilder();
+                for (int i = startLine - 1; i < endLine; i++)
+                {
+                    sb.Append(allLines[i]);
+                    if (i < endLine - 1) sb.Append('\n');
+                }
+                content = sb.ToString();
+            }
+            else
+            {
+                content = fileContent;
+            }
+
+            bool truncated = false;
+            int originalByteCount = System.Text.Encoding.UTF8.GetByteCount(content);
+            if (originalByteCount > maxBytes)
+            {
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                int safeLen = maxBytes;
+                while (safeLen > 0 && (bytes[safeLen] & 0xC0) == 0x80) safeLen--;
+                content = System.Text.Encoding.UTF8.GetString(bytes, 0, safeLen);
+                truncated = true;
+            }
+
+            return new ReadScriptResult
+            {
+                path = normalized,
+                totalLines = totalLines,
+                startLine = rangeApplied ? startLine : 1,
+                endLine = rangeApplied ? endLine : totalLines,
+                byteCount = originalByteCount,
+                truncated = truncated,
+                content = content
             };
         }
 
@@ -117,6 +224,27 @@ namespace Community.Unity.MCP
             public string name;
             public string type;
             public string guid;
+        }
+
+        [Serializable]
+        public class ReadScriptArgs
+        {
+            [McpParam("Asset path under Assets/ or Packages/ (e.g., 'Assets/Project/1.Scripts/Foo.cs')", Required = true)] public string path;
+            [McpParam("Optional 1-based start line (inclusive)")] public int startLine;
+            [McpParam("Optional 1-based end line (inclusive)")] public int endLine;
+            [McpParam("Max bytes to return (default 200KB, hard cap 2MB)")] public int maxBytes;
+        }
+
+        [Serializable]
+        public class ReadScriptResult
+        {
+            public string path;
+            public int totalLines;
+            public int startLine;
+            public int endLine;
+            public int byteCount;
+            public bool truncated;
+            public string content;
         }
 
         [Serializable]

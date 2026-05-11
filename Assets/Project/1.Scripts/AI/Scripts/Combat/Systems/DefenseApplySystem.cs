@@ -32,6 +32,7 @@ namespace Game.Combat.Systems
                     state.enemy.currentPhase = CombatPhase.Recovery;
                     state.enemy.phaseElapsedMs = 0f;
                     state.enemy.isParry = false;
+                    state.player.isParryWindowOpen = false;
                     break;
             }
 
