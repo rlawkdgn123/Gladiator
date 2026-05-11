@@ -26,7 +26,7 @@ namespace InputHandle
         public InputAction FocusAction;
         public InputAction AttackAction;
         public InputAction ParryAction;
-        public InputAction WhillAction;
+        public InputAction WheelAction;
     }
 }
 
@@ -61,7 +61,7 @@ public class PlayerInputHandler : MonoBehaviour
             Actions.ParryAction = m_playerInput.actions["Parry"];
 
         if (m_playerInput != null)
-            Actions.WhillAction = m_playerInput.actions["ChangeTarget"];
+            Actions.WheelAction = m_playerInput.actions["ChangeTarget"];
     }
 
     private void OnMove(InputValue value)
@@ -150,9 +150,9 @@ public class PlayerInputHandler : MonoBehaviour
             && Actions.ParryAction.WasPressedThisFrame();
     }
 
-    public bool GetWhillActionWasPressedThisFrame()
+    public bool GetWheelActionWasPressedThisFrame()
     {
-        return Actions.WhillAction != null
-            && Actions.WhillAction.WasPressedThisFrame();
+        return Actions.WheelAction != null
+            && Actions.WheelAction.WasPressedThisFrame();
     }
 }

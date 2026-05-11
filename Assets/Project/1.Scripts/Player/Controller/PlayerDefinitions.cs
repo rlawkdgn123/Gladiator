@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VInspector;
 
-namespace Player
+namespace PlayerControllerInfo
 {
     [Serializable]
     public class Components
@@ -16,7 +17,7 @@ namespace Player
         public PlayerInput PlayerInput;
         public PlayerInputHandler InputHandler;
         public PlayerTargetFinder FocusAim;
-        public PlayerGuardIndicator PlayerGuardIndicator;
+        public PlayerGuardIndicatorSystem PlayerGuardIndicatorSystem;
         public PlayerStatusSystem PlayerStatus;
         public Weapon PlayerWeapon;
 
@@ -42,7 +43,7 @@ namespace Player
 
         public Vector3 ScreenCenter;
         public Ray Aim;
-        public CursorManager.GuardZone GuardZone;
+        public GuardZone GuardZone;
     }
 
     [Serializable]
@@ -80,11 +81,12 @@ namespace Player
 
 
 
-        
 
+        [Foldout("Gravity")]
         [Tooltip("중력.")]
         public float Gravity = -9.81f;
 
+        [Foldout("OverlapBox")]
         [Range(1f, 30f), Tooltip("포커스 모드 전환을 위한 적 감지 범위.")]
         public float DetectRadius = 2.5f;
 
@@ -99,7 +101,10 @@ namespace Player
 
         [Tooltip("카메라 1차 감지 범위 위치 보정치.")]
         public Vector3 OverlapBoxForwardOffset = new Vector3(0f, 0f, 0f);
+        [Tooltip("디버그용. 켜면 OverlapBox가 Enemy 레이어 대신 모든 레이어를 대상으로 검사합니다.")]
+        public bool DebugDetectAllLayers = false;
 
+        [Foldout("Indicator")]
         [Tooltip("포커스 진입 시 가드 인디케이터 페이드아웃 시간.")]
         public float FocusIndicatorFadeOutDuration = 0.2f;
 
@@ -122,6 +127,9 @@ namespace Player
         public bool IsForwardBlocked;
         public bool IsGrounded;
         public bool IsOnSteepSlope;
+        public bool CanGuard; // Trigger 행동을 하지 않을 때
+        public bool CanNextAttack;
+        public bool IsAttackReceive; // 어떤 상태든간 피격받을 때
 
         [Space]
         [Foldout("Move")]
@@ -133,9 +141,10 @@ namespace Player
         [Space]
         [Foldout("TriggerAction")]
         public bool IsAttacking;
+        public bool IsHitting;
         public bool IsParrying;
-        public bool CanNextAttack;
-        public bool HasNextAttackInput;
+        public bool IsGuarding;
+        
     }
 
     [Serializable]
@@ -156,7 +165,9 @@ namespace Player
         [Header("Direction")]
         [Tooltip("기본적인 플레이어의 전방.")]
         public Vector3 ForwardVector; // 기본 플레이어 전방.
-        public CursorManager.GuardZone GuardZone; // 마우스 방향
+        public Vector3 FocusNoTargetForward;
+        public Vector3 FocusNoTargetRight;
+        public GuardZone GuardZone; // 마우스 방향
 
         [Space]
         public float GroundDistance;
@@ -171,6 +182,7 @@ namespace Player
         [Header("Detect")]
         public Collider FocusTarget;
         public Collider[] DetectEnemysBuffer = new Collider[Global.MaxPlayersPerTeam];
+        public List<Collider> AimEnemysBuffer = new();
         [Tooltip("포커싱된 상대방과의 거리.")]
         public float FocusTargetDistance;
         public Vector3 FocusTargetPoint;

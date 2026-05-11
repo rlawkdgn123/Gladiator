@@ -25,15 +25,7 @@ public class PlayerExitStateBehaviour : StateMachineBehaviour
         if (!playerController) { return; }
 
         if (playerController.GetIsAttacking())
-        { // 공격
-            if (!playerController.GetHasNextAttackInput())
-                playerController.SetIsAttacking(false);
-            else
-            {
-                playerController.SetHasNextAttackInput(false); 
-                animator.SetTrigger("DoAttack");
-            }
-        }
+            playerController.SetIsAttacking(false);
         if (playerController.GetIsParrying()) // 쳐내기
             playerController.SetIsParrying(false);
 

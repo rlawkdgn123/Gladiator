@@ -1,4 +1,4 @@
-﻿using Player;
+﻿using PlayerControllerInfo;
 using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using static UnityEditor.VersionControl.Asset;
 using static UnityEngine.EventSystems.EventTrigger;
 
 [RequireComponent(typeof(Animator))]
@@ -18,19 +19,19 @@ using static UnityEngine.EventSystems.EventTrigger;
 [RequireComponent(typeof(PlayerStatusSystem))]
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private Player.Components m_playerComponents = new();
-    [SerializeField] private Player.Inputs m_playerInputs = new();
-    [SerializeField] private Player.CheckOption m_checkOption = new();
-    [SerializeField] private Player.CurrentState m_currentState = new();
-    [SerializeField] private Player.CurrentValue m_currentValue = new();
-    [SerializeField] private Player.Status m_status;
+    [SerializeField] private PlayerControllerInfo.Components m_components = new();
+    [SerializeField] private PlayerControllerInfo.Inputs m_inputs = new();
+    [SerializeField] private PlayerControllerInfo.CheckOption m_checkOption = new();
+    [SerializeField] private PlayerControllerInfo.CurrentState m_currentState = new();
+    [SerializeField] private PlayerControllerInfo.CurrentValue m_currentValue = new();
+    [SerializeField] private PlayerControllerInfo.Status m_status;
 
-    private Player.Components Components => m_playerComponents;
-    private Player.Inputs Inputs => m_playerInputs;
-    private Player.CheckOption CheckOptions => m_checkOption;
-    private Player.CurrentState States => m_currentState;
-    private Player.CurrentValue Values => m_currentValue;
-    public Player.Status Stats => m_status;
+    private PlayerControllerInfo.Components Components => m_components;
+    private PlayerControllerInfo.Inputs Inputs => m_inputs;
+    private PlayerControllerInfo.CheckOption CheckOptions => m_checkOption;
+    private PlayerControllerInfo.CurrentState States => m_currentState;
+    private PlayerControllerInfo.CurrentValue Values => m_currentValue;
+    public PlayerControllerInfo.Status Stats => m_status;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,8 +72,8 @@ public class PlayerController : MonoBehaviour
             Components.InputHandler = GetComponent<PlayerInputHandler>();
 
         // 가드 인디케이터
-        if (!Components.PlayerGuardIndicator)
-            Components.PlayerGuardIndicator = GetComponentInChildren<PlayerGuardIndicator>();
+        if (!Components.PlayerGuardIndicatorSystem)
+            Components.PlayerGuardIndicatorSystem = GetComponentInChildren<PlayerGuardIndicatorSystem>();
 
         if (!Components.IndicatorCanvas)
             Components.IndicatorCanvas = GetComponentInChildren<Canvas>();
@@ -87,10 +88,6 @@ public class PlayerController : MonoBehaviour
         if (!Components.Rigidbody.isKinematic)
             Components.Rigidbody.isKinematic = true;
 
-    }
-
-    private void Start()
-    {
         //////////////////////////////////////////////////////////////////////
         // 플래이어 외부 컴포넌트 할당.
         //////////////////////////////////////////////////////////////////////
@@ -102,13 +99,28 @@ public class PlayerController : MonoBehaviour
 
         // 포커스 모드 에임
         if (!Components.FocusAim)
-            Components.FocusAim = Components.FocusAim = GameObject.Find("PlayerTargetManager").GetComponent<PlayerTargetFinder>();
+        {
+            GameObject playerTargetManager = GameObject.Find("PlayerTargetManager");
+
+            if (playerTargetManager != null)
+                Components.FocusAim = playerTargetManager.GetComponent<PlayerTargetFinder>();
+
+            if (!Components.FocusAim)
+                Components.FocusAim = FindFirstObjectByType<PlayerTargetFinder>();
+        }
 
         if (!Components.FocusAim) Debug.LogError("[PlayerController] PlayerFocusAim 할당이 되지 않았습니다.");
 
         // 카메라 할당.
         if (!Components.MainCamera)
             Components.MainCamera = Camera.main;
+
+    }
+
+    private void Start()
+    {
+
+        EnsureDetectEnemyBuffer();
     }
     #endregion
 
@@ -128,6 +140,7 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         StateUpdate();          // 플레이어 상태 업데이트. [Frame]
+        UpdateFocusTargetTransition(); // 포커스 타겟 전환 보간 및 정지 중 회전 처리.
         UpdateCursorState();    // 디폴트 모드 커서 상태 처리.
         GuardIndicatorUpdate(); // 가드 인디케이터 상태 처리.
         DrawFocusDebug();       // 포커스 디버그 표시.
@@ -177,10 +190,10 @@ public class PlayerController : MonoBehaviour
                         States.IsAttacking = true;
                         Attack();
                     }
-                    // 콤보 입력 가능 구간에는 다음 공격 입력만 예약해둡니다.
+                    // 콤보 입력 가능 구간에는 다음 공격 트리거를 바로 다시 보냅니다.
                     else if (States.IsAttacking && States.CanNextAttack)
                     {
-                        States.HasNextAttackInput = true;
+                        Components.Animator.SetTrigger("DoAttack");
                     }
                 }
             }
@@ -250,6 +263,13 @@ public class PlayerController : MonoBehaviour
                 Components.Animator.SetBool("IsFocusing", States.IsFocusing);
             }
 
+            // 초회 검사 이후 적 찾기
+            if (States.IsFocusing && !Values.FocusTarget)
+            {
+                DetectEnemy();
+            }
+
+
             if (States.IsFocusing && Values.FocusTarget && Mathf.Abs(scrollInput) > 0.0001f)
             {
                 ChangeFocusTarget(scrollInput);
@@ -266,9 +286,12 @@ public class PlayerController : MonoBehaviour
             {
                 // 초기화.
                 Array.Clear(Values.DetectEnemysBuffer, 0, Values.DetectEnemysBuffer.Length);
+                Values.AimEnemysBuffer.Clear();
                 Values.FocusTarget = null;
                 Values.PreviousFocusTarget = null;
                 Values.FocusTargetPoint = Vector3.zero;
+                Values.FocusNoTargetForward = Vector3.zero;
+                Values.FocusNoTargetRight = Vector3.zero;
                 States.isEnemyDetected = false;
             }
 
@@ -279,17 +302,43 @@ public class PlayerController : MonoBehaviour
                 transform.position);
         }
 
+
+        // 가드 가능 상태 : Trigger 행동을 하지 않고 있는 기본 상태
+        States.CanGuard = (!States.IsAttacking && !States.IsParrying);
+        Components.Animator.SetBool("IsGuard", States.CanGuard);
+
     }
 
     private void GuardIndicatorUpdate()
     {
-        if (Components.IndicatorCanvas && Components.PlayerGuardIndicator)
+        if (Components.IndicatorCanvas && Components.PlayerGuardIndicatorSystem)
         {
             bool showIndicator = States.IsFocusing;
             if (Components.IndicatorCanvas.enabled != showIndicator)
                 Components.IndicatorCanvas.enabled = showIndicator;
         }
         else Debug.LogError("[PlayerController] IndicatorCanvas 필요.");
+    }
+
+    private void UpdateFocusTargetTransition()
+    {
+        if (!States.IsFocusing || Values.FocusTarget == null)
+            return;
+
+        if (!TryUpdateFocusTargetPoint(Time.deltaTime))
+            return;
+
+        if (States.IsMoving)
+            return;
+
+        Vector3 playerPos = Components.Rigidbody.position;
+        Vector3 lookDir = Vector3.ProjectOnPlane(Values.FocusTargetPoint - playerPos, Vector3.up);
+
+        if (lookDir.sqrMagnitude <= 0.0001f)
+            return;
+
+        transform.rotation = Quaternion.LookRotation(lookDir);
+        Values.FocusTargetDistance = Vector3.Distance(Values.FocusTargetPoint, playerPos);
     }
 
     private void UpdateCursorState()
@@ -310,8 +359,23 @@ public class PlayerController : MonoBehaviour
         if (CursorManager.Instance && !States.IsAttacking)
         {
             Values.GuardZone = CursorManager.Instance.GetGuardZoneDirection();
-            Components.Animator.SetFloat("GuardZone", (int)Values.GuardZone);
+            Components.Animator.SetInteger("GuardZone", (int)Values.GuardZone);
         }
+    }
+
+    //////////////////////////////
+    /// <summary>
+    /// Getter / Setter
+    /// </summary>
+    //////////////////////////////
+    public bool GetIsFocusing()
+    {
+        return States.IsFocusing;
+    }
+
+    public Collider GetFocusTarget()
+    {
+        return Values.FocusTarget;
     }
     #endregion
 
@@ -351,17 +415,19 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void DetectEnemy()
     {
+        EnsureDetectEnemyBuffer();
+
         List<Collider> visibleEnemies = GetVisibleFocusEnemySnapshot();
         if (visibleEnemies.Count <= 0)
         {
+            Debug.Log("[FocusDetect] visibleEnemies.Count <= 0");
             States.isEnemyDetected = false;
             Values.FocusTarget = null;
             return;
         }
 
-        //Values.DetectEnemysBuffer = Components.FocusAim.GetEnemyColliderSnapShot();
         // Aim 기준으로 2차 기준 분리
-        List<Collider> aimEnemies = Components.FocusAim.GetEnemyColliderSnapShot();
+        Values.AimEnemysBuffer = Components.FocusAim.GetEnemyColliderSnapShot();
 
         List<Collider> insideAimEnemies = new List<Collider>();    // 1순위
         List<Collider> outsideAimEnemies = new List<Collider>();   // 2순위
@@ -372,7 +438,7 @@ public class PlayerController : MonoBehaviour
             if (enemy == null)
                 continue;
 
-            if (aimEnemies.Contains(enemy))
+            if (Values.AimEnemysBuffer.Contains(enemy))
                 insideAimEnemies.Add(enemy);
             else
                 outsideAimEnemies.Add(enemy);
@@ -384,28 +450,52 @@ public class PlayerController : MonoBehaviour
         if (finalTarget == null)
             finalTarget = FindAimClosetTarget(outsideAimEnemies);
 
+        Debug.Log(
+            $"[FocusDetect] visible:{visibleEnemies.Count}, insideAim:{insideAimEnemies.Count}, outsideAim:{outsideAimEnemies.Count}, finalTarget:{(finalTarget ? finalTarget.name : "null")}");
+
         Values.FocusTarget = finalTarget;
         States.isEnemyDetected = finalTarget != null;
 
     }
 
+
     private List<Collider> GetVisibleFocusEnemySnapshot()
     {
+        Debug.Log("[FocusDetect] GetVisibleFocusEnemySnapshot()");
         List<Collider> visibleEnemies = new List<Collider>();
 
         if (Components.MainCamera == null || Components.FocusAim == null)
+        {
+            Debug.LogWarning(
+                $"[FocusDetect] MainCamera 또는 FocusAim 없음. MainCamera:{(Components.MainCamera ? Components.MainCamera.name : "null")}, FocusAim:{(Components.FocusAim ? Components.FocusAim.name : "null")}");
             return visibleEnemies;
+        }
 
+        EnsureDetectEnemyBuffer();
         Array.Clear(Values.DetectEnemysBuffer, 0, Values.DetectEnemysBuffer.Length);
+
+        Quaternion overlapRotation =
+        Quaternion.Euler(0f, Components.FocusAim.transform.eulerAngles.y, 0f);
+
+        Vector3 overlapCenter =
+            Components.FocusAim.transform.position + (overlapRotation * CheckOptions.OverlapBoxForwardOffset);
+
+        int overlapLayerMask =
+            CheckOptions.DebugDetectAllLayers
+            ? Physics.AllLayers
+            : Global.EnemyLayerMask;
 
         int detectEnemyCount =
             Physics.OverlapBoxNonAlloc(
-            Components.FocusAim.transform.TransformPoint(CheckOptions.OverlapBoxForwardOffset),
+            overlapCenter,
             CheckOptions.OverlapBoxHalfExtents,
             Values.DetectEnemysBuffer,
-            Quaternion.Euler(0f, Components.FocusAim.transform.eulerAngles.y, 0f),
-            Global.EnemyLayerMask,
+            overlapRotation,
+            overlapLayerMask,
             QueryTriggerInteraction.Ignore);
+
+        Debug.Log(
+            $"[FocusDetect] OverlapBox center:{overlapCenter}, halfExtents:{CheckOptions.OverlapBoxHalfExtents}, detectEnemyCount:{detectEnemyCount}, bufferSize:{Values.DetectEnemysBuffer.Length}, detectAllLayers:{CheckOptions.DebugDetectAllLayers}, layerMask:{overlapLayerMask}");
 
         if (detectEnemyCount <= 0)
             return visibleEnemies;
@@ -413,20 +503,46 @@ public class PlayerController : MonoBehaviour
         foreach (Collider enemy in Values.DetectEnemysBuffer)
         {
             if (enemy == null)
+            {
+                Debug.Log("[FocusDetect] buffer 안에 null enemy");
                 continue;
+            }
+
+            Debug.Log(
+                $"[FocusDetect] raw hit - name:{enemy.name}, layer:{LayerMask.LayerToName(enemy.gameObject.layer)}, tag:{enemy.tag}, isTrigger:{enemy.isTrigger}");
 
             Vector3 viewPos = Components.MainCamera.WorldToViewportPoint(enemy.bounds.center);
 
             if (viewPos.z <= 0f)
+            {
+                Debug.Log($"[FocusDetect] {enemy.name} 탈락 - 카메라 뒤. viewport:{viewPos}");
                 continue;
+            }
 
             if (viewPos.x < 0f || viewPos.x > 1f || viewPos.y < 0f || viewPos.y > 1f)
+            {
+                Debug.Log(
+                    $"[FocusDetect] {enemy.name} 탈락 - viewport 밖. viewport:{viewPos}, center:{enemy.bounds.center}");
                 continue;
+            }
 
+            Debug.Log(
+                $"[FocusDetect] {enemy.name} 통과 - viewport:{viewPos}, center:{enemy.bounds.center}");
             visibleEnemies.Add(enemy);
         }
 
+        Debug.Log($"[FocusDetect] visibleEnemies 최종:{visibleEnemies.Count}");
         return visibleEnemies;
+    }
+
+    private void EnsureDetectEnemyBuffer()
+    {
+        if (Values.DetectEnemysBuffer == null || Values.DetectEnemysBuffer.Length <= 0)
+        {
+            int bufferSize = Mathf.Max(Global.MaxPlayersPerTeam, 8);
+            Values.DetectEnemysBuffer = new Collider[bufferSize];
+            Debug.LogWarning($"[FocusDetect] DetectEnemysBuffer가 비어 있어 크기 {bufferSize}로 재초기화했습니다.");
+        }
     }
 
     private void ChangeFocusTarget(float scrollY)
@@ -535,9 +651,10 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    // 이동
+    // 이동 및 회전
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// <summary>
     /// 플레이어 이동 로직 구간입니다.
@@ -569,9 +686,11 @@ public class PlayerController : MonoBehaviour
             MoveDefault();
     }
 
+    //////////////////////////////
     /// <summary>
     /// 기본 상태
     /// </summary>
+    //////////////////////////////
     private void MoveDefault()
     {
         if (Components.MainCamera == null)
@@ -711,9 +830,11 @@ public class PlayerController : MonoBehaviour
         Values.PlayerVelocity = curMoveDir * currentSpeed;
     }
 
+    //////////////////////////////
     /// <summary>
     /// 집중 상태
     /// </summary>
+    //////////////////////////////
     private void MoveFocus()
     {
         if (Components.MainCamera == null)
@@ -731,10 +852,16 @@ public class PlayerController : MonoBehaviour
             Values.PreviousFocusTarget = null;
             Values.FocusTargetPoint = Vector3.zero;
 
-            // 카메라의 정면/오른쪽 벡터를 바닥 평면(XZ)에 투영해서
-            // no-target 포커스 상태에서도 화면 기준 좌우 이동 조작을 유지.
-            Vector3 camForward = Vector3.ProjectOnPlane(Components.MainCamera.transform.forward, Vector3.up).normalized;
-            Vector3 camRight = Vector3.ProjectOnPlane(Components.MainCamera.transform.right, Vector3.up).normalized;
+            if (Values.FocusNoTargetForward == Vector3.zero || Values.FocusNoTargetRight == Vector3.zero)
+            {
+                Values.FocusNoTargetForward =
+                    Vector3.ProjectOnPlane(Components.MainCamera.transform.forward, Vector3.up).normalized;
+                Values.FocusNoTargetRight =
+                    Vector3.ProjectOnPlane(Components.MainCamera.transform.right, Vector3.up).normalized;
+            }
+
+            Vector3 camForward = Values.FocusNoTargetForward;
+            Vector3 camRight = Values.FocusNoTargetRight;
 
             // 타겟이 없을 때는 몸 방향도 카메라 정면으로 고정.
             if (camForward.sqrMagnitude > 0.0001f)
@@ -746,7 +873,9 @@ public class PlayerController : MonoBehaviour
                 return;
             }
 
-            Vector3 curMoveDir = camRight * moveInput.x + camForward * moveInput.y;
+            // no-target 포커스에선 좌우 스트레이프 및 앞뒤이동만 허용.
+            // 따라서 저장해둔 카메라 right 축 기준으로만 이동함.
+            Vector3 curMoveDir = (camForward * moveInput.y) + (camRight * moveInput.x);
 
             if (curMoveDir.sqrMagnitude < 0.0001f)
             {
@@ -761,24 +890,11 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // 실제 타겟 위치는 바로 바뀔 수 있으므로, 바라보는 기준점은
-            // FocusTargetPoint를 통해 한 번 부드럽게 보간해서 씁니다.
-            Transform focusTarget = Values.FocusTarget.transform;
-            Vector3 targetPos = focusTarget.position;
+            Values.FocusNoTargetForward = Vector3.zero;
+            Values.FocusNoTargetRight = Vector3.zero;
 
-            if (Values.PreviousFocusTarget != Values.FocusTarget || Values.FocusTargetPoint == Vector3.zero)
-            {
-                if (Values.PreviousFocusTarget == null || Values.FocusTargetPoint == Vector3.zero)
-                    Values.FocusTargetPoint = targetPos;
-
-                Values.PreviousFocusTarget = Values.FocusTarget;
-            }
-
-            float focusTargetLerpT = 1f - Mathf.Exp(-CheckOptions.FocusTargetLerpSpeed * dt);
-            Values.FocusTargetPoint = Vector3.Lerp(
-                Values.FocusTargetPoint,
-                targetPos,
-                focusTargetLerpT);
+            if (!TryUpdateFocusTargetPoint(dt))
+                return;
 
             Vector3 smoothedTargetPos = Values.FocusTargetPoint;
 
@@ -845,6 +961,33 @@ public class PlayerController : MonoBehaviour
             Components.Rigidbody.MoveRotation(Quaternion.LookRotation(lookDirection));
         }
     }
+
+    private bool TryUpdateFocusTargetPoint(float dt)
+    {
+        if (Values.FocusTarget == null)
+            return false;
+
+        // 실제 타겟 위치는 바로 바뀔 수 있으므로, 바라보는 기준점은
+        // FocusTargetPoint를 통해 한 번 부드럽게 보간해서 씀.
+        Transform focusTarget = Values.FocusTarget.transform;
+        Vector3 targetPos = focusTarget.position;
+
+        if (Values.PreviousFocusTarget != Values.FocusTarget || Values.FocusTargetPoint == Vector3.zero)
+        {
+            if (Values.PreviousFocusTarget == null || Values.FocusTargetPoint == Vector3.zero)
+                Values.FocusTargetPoint = targetPos;
+
+            Values.PreviousFocusTarget = Values.FocusTarget;
+        }
+
+        float focusTargetLerpT = 1f - Mathf.Exp(-CheckOptions.FocusTargetLerpSpeed * dt);
+        Values.FocusTargetPoint = Vector3.Lerp(
+            Values.FocusTargetPoint,
+            targetPos,
+            focusTargetLerpT);
+
+        return true;
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     #endregion
 
@@ -856,51 +999,6 @@ public class PlayerController : MonoBehaviour
     /// 플레이어 공격 로직 구간입니다.
     /// </summary>
     #region Attack Methods
-    private void Parry()
-    {
-        if (!States.IsAttacking) return;
-
-        SetIsParrying(true);
-
-        if (States.IsFocusing)
-            ParryFocus();
-        else
-            ParryDefault();
-    }
-
-    /// <summary>
-    /// 기본 상태
-    /// </summary>
-    private void ParryDefault()
-    {
-        Components.Animator.SetTrigger("DoParry");
-    }
-    /// <summary>
-    /// 집중 상태
-    /// </summary>
-    private void ParryFocus()
-    {
-        Components.Animator.SetTrigger("DoParry");
-    }
-
-    public void SetIsParrying(bool isParrying)
-    {
-        States.IsParrying = isParrying;
-
-        if (Components.Animator)
-            Components.Animator.SetBool("IsParrying", isParrying);
-    }
-    #endregion
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    // 쳐내기(패리)
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// <summary>
-    /// 플레이어 쳐내기(패리) 로직 구간입니다.
-    /// </summary>
-    #region Attack Methods
     private void Attack()
     {
 
@@ -910,17 +1008,23 @@ public class PlayerController : MonoBehaviour
             AttackDefault();
     }
 
+    //////////////////////////////
     /// <summary>
     /// 기본 상태
     /// </summary>
+    //////////////////////////////
     private void AttackDefault()
     {
         SetIsAttacking(true);
+        States.CanNextAttack = true;
         Components.Animator.SetTrigger("DoAttack");
     }
+
+    //////////////////////////////
     /// <summary>
     /// 집중 상태
     /// </summary>
+    //////////////////////////////
     private void AttackFocus()
     {
         if (!States.IsAttacking) return;
@@ -928,6 +1032,11 @@ public class PlayerController : MonoBehaviour
         Components.Animator.SetTrigger("DoAttack");
     }
 
+    //////////////////////////////
+    /// <summary>
+    /// 공격 관련 Getter / Setter
+    /// </summary>
+    //////////////////////////////
     public void SetIsAttacking(bool isAttacking)
     {
         States.IsAttacking = isAttacking;
@@ -935,7 +1044,6 @@ public class PlayerController : MonoBehaviour
         if (!isAttacking)
         {
             States.CanNextAttack = false;
-            States.HasNextAttackInput = false;
         }
 
         if (Components.Animator)
@@ -947,37 +1055,155 @@ public class PlayerController : MonoBehaviour
         States.CanNextAttack = canNextAttack;
     }
 
-    public bool GetHasNextAttackInput()
+    public void AnimEvent_SetWeaponCollider(int value)
     {
-        return States.HasNextAttackInput;
-    }
+        if (!Components.PlayerWeapon)
+            Components.PlayerWeapon = GetComponentInChildren<Weapon>();
 
-    public void SetHasNextAttackInput(bool hasNextAttackInput)
-    {
-        States.HasNextAttackInput = hasNextAttackInput;
-    }
+        if (!Components.PlayerWeapon)
+        {
+            Debug.LogWarning("[PlayerController] AnimEvent_SetWeaponCollider 호출 실패: Weapon을 찾지 못했습니다.", this);
+            return;
+        }
 
-    public bool GetIsFocusing()
-    {
-        return States.IsFocusing;
+        Components.PlayerWeapon.SetWeaponCollider(value);
     }
-
     public bool GetIsAttacking()
     {
         return States.IsAttacking;
+    }
+    #endregion
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 피격 (막기,쳐내기,맞기)
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 플레이어 가드 & 쳐내기(패리) & 맞기(히트) 로직 구간입니다.
+    /// </summary>
+
+    ////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 막기(가드)
+    /// </summary>
+    ////////////////////////////////////////////////////////////
+    #region Guard Methods
+    public void Guard()
+    {
+        if (!States.IsAttacking) return;
+
+        SetIsGuarding(true);
+        Components.Animator.SetTrigger("DoGuard");
+    }
+
+    //////////////////////////////
+    /// <summary>
+    /// Getter / Setter
+    /// </summary>
+    //////////////////////////////
+    
+    public void SetIsGuarding(bool isGuarding)
+    {
+        States.IsGuarding = isGuarding;
+
+        if (Components.Animator)
+            Components.Animator.SetBool("IsGuarding", isGuarding);
+    }
+
+    public bool GetIsGuarding()
+    {
+        return States.IsGuarding;
+    }
+    #endregion
+
+    ////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 쳐내기(패링)
+    /// </summary>
+    ////////////////////////////////////////////////////////////
+    #region Parry Methods
+    public void Parry()
+    {
+        if (!States.IsAttacking) return;
+
+        SetIsParrying(true);
+
+        /*if (States.IsFocusing)
+            ParryFocus();
+        else
+            ParryDefault();*/
+        Components.Animator.SetTrigger("DoParry");
+    }
+
+    //////////////////////////////
+    /// <summary>
+    /// Getter / Setter
+    /// </summary>
+    //////////////////////////////
+    public void SetIsParrying(bool isParrying)
+    {
+        States.IsParrying = isParrying;
+
+        if (Components.Animator)
+            Components.Animator.SetBool("IsParrying", isParrying);
     }
 
     public bool GetIsParrying()
     {
         return States.IsParrying;
     }
+    #endregion
 
-    public Collider GetFocusTarget()
+    ////////////////////////////////////////////////////////////
+    /// <summary>
+    /// 맞기(히트)
+    /// </summary>
+    ////////////////////////////////////////////////////////////
+    #region Hit Methods
+    public void Hit()
     {
-        return Values.FocusTarget;
+        if (!States.IsAttacking) return;
+
+        SetIsHitting(true);
+        Components.Animator.SetTrigger("DoHit");
+    }
+
+    //////////////////////////////
+    /// <summary>
+    /// Getter / Setter
+    /// </summary>
+    //////////////////////////////
+    public void SetIsHitting(bool isHitting)
+    {
+        States.IsHitting = isHitting;
+
+        if (Components.Animator)
+            Components.Animator.SetBool("IsHitting", isHitting);
+    }
+
+    public bool GetIsHitting()
+    {
+        return States.IsHitting;
     }
     #endregion
 
+    //////////////////////////////
+    /// <summary>
+    ///  상태
+    /// </summary>
+    //////////////////////////////
+    public void SetIsAttackReceive(bool isAttackReceive)
+    {
+        States.IsAttackReceive = isAttackReceive;
+
+        if (Components.Animator)
+            Components.Animator.SetBool("IsAttackReceive", isAttackReceive);
+    }
+    public bool GetCanGuard()
+    {
+        return States.CanGuard;
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -999,7 +1225,7 @@ public class PlayerController : MonoBehaviour
             Handles.DrawWireDisc(transform.position, Vector3.up, CheckOptions.DetectRadius);*/
 
         // 감지범위. - 글라디아토르 버전
-        Color radiusColor = States.isEnemyDetected ? Color.orangeRed : Color.olive;
+        Color radiusColor = States.isEnemyDetected ? Color.orangeRed : Color.green;
            Handles.color = radiusColor;
 
             Quaternion boxRotation =
@@ -1023,7 +1249,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 #endif
-
     private void DrawFocusDebug()
     {
         if (!States.IsFocusing || Components.MainCamera == null)

@@ -1,29 +1,32 @@
-﻿/*
- * 플레이어 가드 인디케이터
- * - 공용 GuardIndicator를 상속
- * - 플레이어 기준 참조만 연결
- */
+﻿using System;
 using GuardIndicatorInfo;
-using System;
+using Game.Combat.Execution;
 using UnityEngine;
+using Unity.VectorGraphics;
 
 
-
-public class PlayerGuardIndicator : GuardIndicatorBase
+public class EnemyGuardIndicator : GuardIndicatorBase
 {
-    [SerializeField] private PlayerController m_playerController;
+    [SerializeField] private EnemyCombatController m_enemyController;
+    
 
     protected override void Awake()
     {
         base.Awake();
 
-        if (!m_playerController)
-            m_playerController = GetComponentInParent<PlayerController>();
+        if (!m_enemyController)
+            m_enemyController = GetComponentInParent<EnemyCombatController>();
 
-        if (!m_playerController)
-            Debug.LogError("[PlayerGuardIndicator] PlayerController 할당이 되지 않았습니다.");
-
+        if (!m_enemyController)
+            Debug.LogError("[EnemyGuardIndicator] EnemyCombatController 할당이 되지 않았습니다.");
     }
+
+    protected void Start()
+    {
+        if (!Components.ResizeTarget)
+            Components.ResizeTarget = PlayerManager.Instance.GetPlayerTransform();
+    }
+
     protected override void FixedUpdate()
     {
         base.FixedUpdate();
@@ -61,3 +64,4 @@ public class PlayerGuardIndicator : GuardIndicatorBase
         }
     }
 }
+

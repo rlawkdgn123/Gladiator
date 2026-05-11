@@ -1,11 +1,11 @@
-﻿using GuardIndicatorHUD;
+﻿using GuardIndicatorSystemInfo;
 using UnityEngine;
 
 public class PlayerStatusSystem : MonoBehaviour
 {
-    [SerializeField] private Player.Status m_status = new();
+    [SerializeField] private PlayerControllerInfo.Status m_status = new();
 
-    public Player.Status Stats => m_status;
+    public PlayerControllerInfo.Status Stats => m_status;
 
     void Start()
     {

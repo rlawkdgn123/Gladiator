@@ -1,28 +1,93 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 // 공용 가드 인디케이터 시스템
 // - 커서 방향 읽기
 // - 각 인디케이터의 색상/알파 갱신
+
+
+namespace GuardIndicatorSystemInfo
+{
+    public enum IndicatorHealthState : int
+    {
+        Full = 0,   // 75 ~ 100% (Default)
+        Damaged,     // 35 ~ 74%
+        Critical,   // 1 ~ 34%
+        Destroyed,  // 0%
+    }
+
+    public enum IndicatorActionState : int
+    {
+        None = 0, // Default
+        Attack,
+        Parry,
+    }
+
+    [Serializable]
+    public class Components
+    {
+        [Header("GuardIndicator")]
+        public GuardIndicatorBase[] GuardIndicators;
+
+        [Space]
+        [Header("OtherComponents")]
+        public CursorManager CursorManager;
+    }
+
+    [Serializable]
+    public class CheckOption
+    {
+
+        [Header("Offset")]
+        public Vector3 IndicatorOffset;
+
+        [Header("Alpha")]
+        [Range(0f, 1f), Tooltip("비활성 인디케이터 알파.")]
+        public float OffAlpha = 0.3f;
+    }
+
+    [Serializable]
+    public class CurrentState
+    {
+        [Header("가드존.(GuardZone)")]
+        public GuardZone GuardZone = GuardZone.Left;
+
+        [Header("인디케이터 X 반전 (Left - Right)")]
+        public bool IndicatorFlipX = false;
+    }
+
+    [Serializable]
+    public class CurrentValue
+    {
+
+    }
+
+}
+
 public class GaurdIndicatorSystemBase : MonoBehaviour
 {
-    [SerializeField] private GuardIndicator[] m_guardIndicators;
-    [SerializeField] private CursorManager m_cursorManager;
+    [SerializeField] protected GuardIndicatorSystemInfo.Components m_components = new();
+    [SerializeField] protected GuardIndicatorSystemInfo.CheckOption m_checkOption = new();
+    [SerializeField] protected GuardIndicatorSystemInfo.CurrentState m_currentState = new();
 
-    [Range(0f, 1f), Tooltip("비활성 인디케이터 알파.")]
-    [SerializeField] private float m_OffAlpha = 0.3f;
+    protected GuardIndicatorSystemInfo.Components Components => m_components;
+    protected GuardIndicatorSystemInfo.CheckOption CheckOptions => m_checkOption;
+    protected GuardIndicatorSystemInfo.CurrentState States => m_currentState;
+
+    private RectTransform m_canvasRectTransform;
 
     protected virtual void Awake()
     {
-        m_guardIndicators = FindIndicators();
+        Components.GuardIndicators = FindIndicators();
     }
 
     protected virtual void Start()
     {
-        if (!m_cursorManager)
-            m_cursorManager = CursorManager.Instance;
+        if (!Components.CursorManager)
+            Components.CursorManager = CursorManager.Instance;
 
-        if (!m_cursorManager)
+        if (!Components.CursorManager)
             Debug.LogError("[CursorManager] CursorManager 할당이 되지 않았습니다.");
     }
 
@@ -31,52 +96,20 @@ public class GaurdIndicatorSystemBase : MonoBehaviour
         GuardIndicatorStateUpdate();
     }
 
-    protected virtual GuardIndicator[] FindIndicators()
+    protected virtual GuardIndicatorBase[] FindIndicators()
     {
-        return GetComponentsInChildren<GuardIndicator>();
+        return GetComponentsInChildren<GuardIndicatorBase>();
     }
 
-    private void SetOpacity(Image image, float opacity)
+    protected void SetOpacity(Image image, float opacity)
     {
         Color color = image.color;
         color.a = opacity;
         image.color = color;
     }
 
-    private void GuardIndicatorStateUpdate()
+    protected virtual void GuardIndicatorStateUpdate()
     {
-        CursorManager cursorManager = m_cursorManager != null ? m_cursorManager : CursorManager.Instance;
-        if (cursorManager == null || m_guardIndicators == null)
-            return;
 
-        for (int i = 0; i < m_guardIndicators.Length; ++i)
-        {
-            GuardIndicator indicator = m_guardIndicators[i];
-            if (indicator == null)
-                continue;
-
-            Image image = indicator.GetComponent<Image>();
-            if (image == null)
-                continue;
-
-            switch (indicator.GetHealthState())
-            {
-                case GuardIndicatorHUD.IndicatorHealthState.Critical: image.color = Color.orangeRed; break;
-                case GuardIndicatorHUD.IndicatorHealthState.Destroyed: image.color = Color.black; break;
-                default: image.color = Color.green; break;
-            }
-
-            switch (indicator.GetActionState())
-            {
-                case GuardIndicatorHUD.IndicatorActionState.Attack: image.color = Color.darkRed; break;
-                case GuardIndicatorHUD.IndicatorActionState.Parry: image.color = Color.orangeRed; break;
-                default: break;
-            }
-
-            if (cursorManager.GetGuardZoneDirection() == indicator.GetGuardZone())
-                SetOpacity(image, 1f);
-            else
-                SetOpacity(image, m_OffAlpha);
-        }
     }
 }
