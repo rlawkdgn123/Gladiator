@@ -9,17 +9,19 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum GuardZone
+{
+    None = 0,   // Middle(예외처리 해야함)
+    Top,        // Center Top
+    Left,       // Bottom Left
+    Right,      // Bottom Right
+}
+
 public class CursorManager : MonoBehaviour
 {
     public static CursorManager Instance { get; private set; }
 
-    public enum GuardZone
-    {
-        None = 0,   // Middle(예외처리 해야함)
-        Top,        // Center Top
-        Left,       // Bottom Left
-        Right,      // Bottom Right
-    }
+    public const GuardZone DefaultGuardZone = GuardZone.Left;
 
     [Header("Current Zone")]
     public GuardZone GuardZoneDirection = GuardZone.None;
@@ -31,7 +33,7 @@ public class CursorManager : MonoBehaviour
     [Header("Input")]
     [SerializeField] private PlayerInputHandler m_inputHandler;
 
-    [SerializeField] private bool m_deBugMode = false;
+    [SerializeField] private bool m_debugMode = false;
 
     private Vector2 screenCenter;
     private Vector2 currentMouseScreenPos;
@@ -150,7 +152,7 @@ public class CursorManager : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (!m_deBugMode)
+        if (!m_debugMode)
             return;
 
         Camera mainCamera = Camera.main;

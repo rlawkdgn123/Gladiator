@@ -4,6 +4,38 @@ using UnityEngine;
 using VInspector;
 using static Status.Health;
 
+namespace HealthSystemInfo
+{
+    [Serializable]
+    public class Components
+    {
+        public Animator Animator;
+    }
+
+    [Serializable]
+    public class CheckOption
+    {
+        [Space]
+        [Foldout("GroundCheck")]
+        [Tooltip("지면 체크에 사용할 레이어 마스크.")]
+        public LayerMask GroundLayerMask = -1;
+    }
+
+    [Serializable]
+    public class CurrentState
+    {
+
+    }
+
+    [Serializable]
+    public class CurrentValue
+    {
+        public GuardZone GuardZone = GuardZone.None;
+    }
+}
+
+
+
 namespace BodyParts
 {
     public enum UnitBodyParts : int

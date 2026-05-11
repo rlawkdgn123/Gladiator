@@ -1,13 +1,15 @@
 ﻿/*
- * 공용 가드 인디케이터
+ * 가드 인디케이터 베이스
  * - UI 본체 추적
  * - 캔버스 좌표 변환
  * - 상태/표시 데이터 보관
+ * - 반드시 부모가 "GuardIndicatorSystem" 종류의 스크립트를 가진 캔버스일 것.
+ * - 반드시 본체(루트) 자식에 "IndicatorAnchor" 빈 오브젝트를 넣을 것.
  */
 using System;
 using UnityEngine;
 
-namespace GuardIndicatorHUD
+namespace GuardIndicatorInfo
 {
     public enum IndicatorHealthState : int
     {
@@ -28,7 +30,7 @@ namespace GuardIndicatorHUD
     public class Components
     {
         [Header("GuardIndicator")]
-        public RectTransform RectTransform;
+        public RectTransform RectTransform; // 본인
         public Animator Animator;
 
         [Header("IndicatorAnchor")]
@@ -37,28 +39,44 @@ namespace GuardIndicatorHUD
         [Space]
         [Header("IndicatorCanvas")]
         public Canvas IndicatorCanvas;
+        public RectTransform CanvasRectTransform; // 부모
+
+        [Space]
+        [Header("ResizeTarget")]
+        public Transform ResizeTarget;
 
         [Space]
         [Header("OtherComponents")]
         public Camera MainCamera;
+
     }
 
     [Serializable]
     public class CheckOption
     {
-        public CursorManager.GuardZone GuardZone;
+        public GuardZone GuardZone;
 
         [Header("Offset")]
         public Vector3 IndicatorOffset;
 
         [Header("Direction")]
         [Tooltip("시작 및 기본 가드 방향")]
-        public const int DefaultGuardDirection = (int)CursorManager.GuardZone.Right;
+        public const int DefaultGuardDirection = (int)GuardZone.Right;
+
+        [Header("Resize")]
+        public float MinDistance = 2f;
+        public float MaxDistance = 10f;
+        public float MinScale = 0.6f;
+        public float MaxScale = 1.4f;
+        public Vector3 DefaultScale;
     }
 
     [Serializable]
     public class CurrentState
     {
+        [Header("Resize")]
+        public bool UseDistanceResize = false;
+
         [Header("Direction")]
         [Tooltip("커서가 해당하는 존에 입성했는지")]
         public bool IsActive;
@@ -107,25 +125,34 @@ namespace GuardIndicatorHUD
     }
 }
 
-public class GuardIndicator : MonoBehaviour
+public class GuardIndicatorBase : MonoBehaviour
 {
 
-    [SerializeField] private GuardIndicatorHUD.Components m_components = new();
-    [SerializeField] protected GuardIndicatorHUD.CheckOption m_checkOption = new();
-    [SerializeField] protected GuardIndicatorHUD.CurrentState m_currentState = new();
-    [SerializeField] protected GuardIndicatorHUD.ImageSet m_imageSet = new();
-    [SerializeField] protected GuardIndicatorHUD.Status m_status = new();
+    [SerializeField] protected GuardIndicatorInfo.Components m_components = new();
+    [SerializeField] protected GuardIndicatorInfo.CheckOption m_checkOption = new();
+    [SerializeField] protected GuardIndicatorInfo.CurrentState m_currentState = new();
+    [SerializeField] protected GuardIndicatorInfo.ImageSet m_imageSet = new();
+    [SerializeField] protected GuardIndicatorInfo.Status m_status = new();
 
-    private GuardIndicatorHUD.Components Components => m_components;
-    protected GuardIndicatorHUD.CheckOption CheckOptions => m_checkOption;
-    protected GuardIndicatorHUD.CurrentState States => m_currentState;
-    protected GuardIndicatorHUD.ImageSet Images => m_imageSet;
-    protected GuardIndicatorHUD.Status Stats => m_status;
-
-    private RectTransform m_canvasRectTransform;
+    protected GuardIndicatorInfo.Components Components => m_components;
+    protected GuardIndicatorInfo.CheckOption CheckOptions => m_checkOption;
+    protected GuardIndicatorInfo.CurrentState States => m_currentState;
+    protected GuardIndicatorInfo.ImageSet Images => m_imageSet;
+    protected GuardIndicatorInfo.Status Stats => m_status;
 
     protected virtual void Awake()
     {
+        GameObject root = transform.root.gameObject;
+
+        if (!Components.IndicatorAnchor && root)
+        {
+            Transform uiAnchor = root.transform.Find("IndicatorAnchor");
+            Components.IndicatorAnchor = uiAnchor != null ? uiAnchor : transform.parent;
+        }
+
+        if (!Components.IndicatorAnchor)
+            Debug.LogError("[Indicator] IndicatorAnchor가 할당되지 않았습니다.", this);
+
         if (!Components.RectTransform)
             Components.RectTransform = GetComponent<RectTransform>();
 
@@ -141,8 +168,10 @@ public class GuardIndicator : MonoBehaviour
         if (!Components.IndicatorCanvas)
             Debug.LogError("[Indicator] 캔버스가 할당되지 않았습니다.", this);
 
-        if (Components.IndicatorCanvas)
-            m_canvasRectTransform = Components.IndicatorCanvas.GetComponent<RectTransform>();
+        if (!Components.CanvasRectTransform && Components.IndicatorCanvas)
+            Components.CanvasRectTransform = Components.IndicatorCanvas.GetComponent<RectTransform>();
+
+        CheckOptions.DefaultScale = transform.localScale;
     }
 
     protected virtual void FixedUpdate()
@@ -154,12 +183,14 @@ public class GuardIndicator : MonoBehaviour
             Components.IndicatorAnchor.position,
             CheckOptions.IndicatorOffset,
             Components.RectTransform);
+
+        ResizeIndicator();
     }
 
 
-    protected void RefreshIndicator(Vector3 worldPos, Vector3 worldOffset, RectTransform uiTransform)
+    protected virtual void RefreshIndicator(Vector3 worldPos, Vector3 worldOffset, RectTransform uiTransform)
     {
-        if (!Components.MainCamera || !uiTransform || m_canvasRectTransform == null)
+        if (!Components.MainCamera || !uiTransform || Components.CanvasRectTransform == null)
             return;
 
         Transform camTransform = Components.MainCamera.transform;
@@ -180,7 +211,7 @@ public class GuardIndicator : MonoBehaviour
             : null;
 
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            m_canvasRectTransform,
+            Components.CanvasRectTransform,
             screenPoint,
             uiCamera,
             out Vector2 localPoint))
@@ -189,31 +220,66 @@ public class GuardIndicator : MonoBehaviour
         }
     }
 
-    public void SetGuardZone(CursorManager.GuardZone guardZone)
+    protected void ResizeIndicator()
+    {
+        if (!Components.ResizeTarget 
+        || !States.UseDistanceResize
+        || !Components.RectTransform) return;
+
+        //Vector3 camPos = Components.MainCamera.transform.position;
+
+        float distance = Vector3.Distance(transform.position, Components.ResizeTarget.position);
+
+        // distance를 MinDistance ~ MaxDistance 범위 기준으로 0~1 값으로 변환
+        // distance가 MinDistance보다 작거나 같으면 0,
+        // distance가 MaxDistance보다 크거나 같으면 1
+
+        // InverseLerp : 값을 비율로 바꿈
+        float t = Mathf.InverseLerp(CheckOptions.MinDistance, CheckOptions.MaxDistance, distance);
+        
+        // 뒤집기 작업
+        t = 1f - t;
+
+        // Lerp : 비율을 값으로 바꿈
+        float scale = Mathf.Lerp(CheckOptions.MinScale, CheckOptions.MaxScale, t);
+
+        Components.RectTransform.localScale = CheckOptions.DefaultScale * scale;
+    }
+
+    public void SetGuardZone(GuardZone guardZone)
     {
         States.IsActive = (guardZone == CheckOptions.GuardZone);
     }
-    public void SetActionState(GuardIndicatorHUD.IndicatorActionState actionState)
+    public void SetActionState(GuardIndicatorInfo.IndicatorActionState actionState)
     {
         States.ActionState = actionState;
     }
 
-    public void SetHealthState(GuardIndicatorHUD.IndicatorHealthState healthState)
+    public void SetHealthState(GuardIndicatorInfo.IndicatorHealthState healthState)
     {
         States.HealthState = healthState;
     }
 
-    public CursorManager.GuardZone GetGuardZone()
+    public void SetDefaultScale(Vector3 scale)
+    {
+        CheckOptions.DefaultScale = scale;
+    }
+    public void SetResizeScale(bool isResizing)
+    {
+        States.UseDistanceResize = isResizing;
+    }
+
+    public GuardZone GetGuardZone()
     {
         return CheckOptions.GuardZone;
     }
 
-    public GuardIndicatorHUD.IndicatorActionState GetActionState()
+    public GuardIndicatorInfo.IndicatorActionState GetActionState()
     {
         return States.ActionState;
     }
 
-    public GuardIndicatorHUD.IndicatorHealthState GetHealthState()
+    public GuardIndicatorInfo.IndicatorHealthState GetHealthState()
     {
         return States.HealthState;
     }
