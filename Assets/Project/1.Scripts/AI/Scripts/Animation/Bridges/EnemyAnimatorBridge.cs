@@ -51,10 +51,13 @@ namespace Game.Animation.Bridges
             bool isGuard = action == CombatAction.GuardTop
                         || action == CombatAction.GuardLeft
                         || action == CombatAction.GuardRight;
+            bool isParry = action == CombatAction.ParryTop
+                        || action == CombatAction.ParryLeft
+                        || action == CombatAction.ParryRight;
 
             animator.SetFloat(DirectionHash, ToDirection(action));
 
-            if (!isGuard)
+            if (!isGuard || isParry)
             {
                 animator.SetInteger(ActionTypeHash, ToActionType(action));
                 animator.SetTrigger(CommitActionHash);
@@ -249,6 +252,9 @@ namespace Game.Animation.Bridges
                 CombatAction.GuardTop => 2,
                 CombatAction.GuardLeft => 2,
                 CombatAction.GuardRight => 2,
+                CombatAction.ParryTop => 2,
+                CombatAction.ParryLeft => 2,
+                CombatAction.ParryRight => 2,
                 CombatAction.Wait => 0,
                 _ => 0
             };
@@ -264,6 +270,9 @@ namespace Game.Animation.Bridges
                 CombatAction.GuardTop         => (float)AttackDirection.Top,
                 CombatAction.GuardLeft        => (float)AttackDirection.Left,
                 CombatAction.GuardRight       => (float)AttackDirection.Right,
+                CombatAction.ParryTop         => (float)AttackDirection.Top,
+                CombatAction.ParryLeft        => (float)AttackDirection.Left,
+                CombatAction.ParryRight       => (float)AttackDirection.Right,
                 _                             => (float)AttackDirection.None
             };
         }

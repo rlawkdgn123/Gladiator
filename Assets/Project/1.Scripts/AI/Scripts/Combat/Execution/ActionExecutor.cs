@@ -23,12 +23,19 @@ namespace Game.Combat.Execution
                 case CombatAction.GuardLeft:   return TryGuard(state, CombatAction.GuardLeft,  AttackDirection.Left);
                 case CombatAction.GuardRight:  return TryGuard(state, CombatAction.GuardRight, AttackDirection.Right);
 
+                case CombatAction.ParryTop:    return TryParry(state, CombatAction.ParryTop,   AttackDirection.Top);
+                case CombatAction.ParryLeft:   return TryParry(state, CombatAction.ParryLeft,  AttackDirection.Left);
+                case CombatAction.ParryRight:  return TryParry(state, CombatAction.ParryRight, AttackDirection.Right);
+
                 case CombatAction.Wait:
                     state.enemy.currentAction    = CombatAction.Wait;
                     state.enemy.currentPhase     = CombatPhase.Idle;
+                    state.enemy.currentDirection = AttackDirection.None;
                     state.enemy.phaseElapsedMs   = 0f;
+                    state.enemy.actionElapsedMs  = 0f;
                     state.enemy.isGuarding       = false;
                     state.enemy.isParry          = false;
+                    state.enemy.isParryWindowOpen = false;
                     return true;
 
                 default:
@@ -43,8 +50,23 @@ namespace Game.Combat.Execution
             state.enemy.currentDirection = direction;
             state.enemy.currentPhase     = CombatPhase.Idle;
             state.enemy.phaseElapsedMs   = 0f;
+            state.enemy.actionElapsedMs  = 0f;
             state.enemy.isGuarding       = true;
             state.enemy.isParry          = false;
+            state.enemy.isParryWindowOpen = false;
+            return true;
+        }
+
+        static bool TryParry(CombatState state, CombatAction action, AttackDirection direction)
+        {
+            state.enemy.currentAction        = action;
+            state.enemy.currentDirection     = direction;
+            state.enemy.currentPhase         = CombatPhase.Idle;
+            state.enemy.phaseElapsedMs       = 0f;
+            state.enemy.actionElapsedMs      = 0f;
+            state.enemy.isGuarding           = true;
+            state.enemy.isParry              = true;
+            state.enemy.isParryWindowOpen    = true;
             return true;
         }
 
@@ -61,8 +83,10 @@ namespace Game.Combat.Execution
             state.enemy.currentDirection = attackData.Direction;
             state.enemy.currentPhase = CombatPhase.Startup;
             state.enemy.phaseElapsedMs = 0f;
+            state.enemy.actionElapsedMs = 0f;
             state.enemy.isGuarding = false;
             state.enemy.isParry = false;
+            state.enemy.isParryWindowOpen = false;
             state.enemy.hasResolvedThisAction = false;
             return true;
         }

@@ -71,6 +71,7 @@ namespace Game.Animation.Bridges
             if (!IsReady())
                 return;
 
+            controller.State.enemy.isParry = false;
             controller.State.enemy.isParryWindowOpen = false;
         }
     }
