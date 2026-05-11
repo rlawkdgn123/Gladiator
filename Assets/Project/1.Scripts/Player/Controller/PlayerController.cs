@@ -99,7 +99,15 @@ public class PlayerController : MonoBehaviour
 
         // 포커스 모드 에임
         if (!Components.FocusAim)
-            Components.FocusAim = Components.FocusAim = GameObject.Find("PlayerTargetManager").GetComponent<PlayerTargetFinder>();
+        {
+            GameObject playerTargetManager = GameObject.Find("PlayerTargetManager");
+
+            if (playerTargetManager != null)
+                Components.FocusAim = playerTargetManager.GetComponent<PlayerTargetFinder>();
+
+            if (!Components.FocusAim)
+                Components.FocusAim = FindFirstObjectByType<PlayerTargetFinder>();
+        }
 
         if (!Components.FocusAim) Debug.LogError("[PlayerController] PlayerFocusAim 할당이 되지 않았습니다.");
 
